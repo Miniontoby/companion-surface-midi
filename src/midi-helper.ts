@@ -1,13 +1,14 @@
-import { Input, Output } from '@julusian/midi'
+import { Input, Output } from '@julusian/midi/lazy'
 
-const input = new Input()
-const output = new Output()
+let _input: Input | undefined = undefined
+let _output: Output | undefined = undefined
 
 export function getInputs(): string[] {
 	const inputs: string[] = []
-	for (let i = 0; i < input.getPortCount(); i++) {
+	_input ??= new Input() // Lazy load
+	for (let i = 0; i < _input.getPortCount(); i++) {
 		let counter = 0
-		const portName = input.getPortName(i)
+		const portName = _input.getPortName(i)
 		let numberedPortName = portName
 		while (inputs.includes(numberedPortName)) {
 			counter++
@@ -20,9 +21,10 @@ export function getInputs(): string[] {
 
 export function getOutputs(): string[] {
 	const outputs: string[] = []
-	for (let i = 0; i < output.getPortCount(); i++) {
+	_output ??= new Output() // Lazy load
+	for (let i = 0; i < _output.getPortCount(); i++) {
 		let counter = 0
-		const portName = output.getPortName(i)
+		const portName = _output.getPortName(i)
 		let numberedPortName = portName
 		while (outputs.includes(numberedPortName)) {
 			counter++

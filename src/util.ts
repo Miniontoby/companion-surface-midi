@@ -1,4 +1,4 @@
-import { RgbColor } from '@companion-surface/base'
+import type { RgbColor } from '@companion-surface/base'
 
 export function parseControlId(controlId: string): { row: number; column: number } {
 	const [rowStr, columnStr] = controlId.split('/')

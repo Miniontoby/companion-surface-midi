@@ -1,5 +1,5 @@
 import type { SurfaceSchemaLayoutDefinition } from '@companion-surface/base'
-import { MidiLayoutDefinition } from './tmp-layout.js'
+import type { MidiLayoutDefinition } from './tmp-layout.js'
 import { parseControlId } from './util.js'
 
 export function createSurfaceSchema(layout: MidiLayoutDefinition): SurfaceSchemaLayoutDefinition {

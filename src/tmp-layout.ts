@@ -1,5 +1,5 @@
-import { RgbColor, SurfaceContext, SurfaceInputVariable, SurfaceOutputVariable } from '@companion-surface/base'
-import { MidiMessage, Output } from '@julusian/midi'
+import type { RgbColor, SurfaceContext, SurfaceInputVariable, SurfaceOutputVariable } from '@companion-surface/base'
+import type { MidiMessage, Output } from '@julusian/midi/lazy'
 import { getClosestApcColor, getClosestApcMiniColor, getClosestLpColor, parseControlId } from './util.js'
 
 export interface MidiButtonDefinition {

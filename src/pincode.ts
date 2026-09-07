@@ -1,5 +1,5 @@
-import { SurfacePincodeMap } from '@companion-surface/base'
-import { MidiLayoutDefinition } from './tmp-layout.js'
+import type { SurfacePincodeMap } from '@companion-surface/base'
+import type { MidiLayoutDefinition } from './tmp-layout.js'
 
 export function createPincodeMap(_model: MidiLayoutDefinition): SurfacePincodeMap | null {
 	return {

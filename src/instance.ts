@@ -1,18 +1,18 @@
 import {
 	assertNever,
-	CardGenerator,
+	type CardGenerator,
 	createModuleLogger,
-	HostCapabilities,
+	type HostCapabilities,
 	parseColor,
-	RgbColor,
-	SurfaceDrawProps,
-	SurfaceContext,
-	SurfaceInstance,
-	ModuleLogger,
+	type RgbColor,
+	type SurfaceDrawProps,
+	type SurfaceContext,
+	type SurfaceInstance,
+	type ModuleLogger,
 } from '@companion-surface/base'
-import type { Input, Output } from '@julusian/midi'
+import type { Input, Output } from '@julusian/midi/lazy'
+import type { MidiButtonDefinition, MidiLayoutDefinition } from './tmp-layout.js'
 import { parseControlId } from './util.js'
-import { MidiButtonDefinition, MidiLayoutDefinition } from './tmp-layout.js'
 import { getInputs, getOutputs } from './midi-helper.js'
 
 export class MidiWrapper implements SurfaceInstance {

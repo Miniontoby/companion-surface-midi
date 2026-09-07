@@ -1,8 +1,8 @@
 import type { DetectionSurfaceInfo, OpenSurfaceResult, SurfaceContext, SurfacePlugin } from '@companion-surface/base'
+import { Input, Output } from '@julusian/midi/lazy'
+import { DeviceMappings, DeviceMappingsWithRegex, type MidiLayoutDefinition } from './tmp-layout.js'
 import { MidiWrapper } from './instance.js'
 import { createSurfaceSchema } from './surface-schema.js'
-import { Input, Output } from '@julusian/midi'
-import { DeviceMappings, DeviceMappingsWithRegex, MidiLayoutDefinition } from './tmp-layout.js'
 import { createPincodeMap } from './pincode.js'
 import { getInputs, getOutputs } from './midi-helper.js'
 
