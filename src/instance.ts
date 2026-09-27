@@ -28,6 +28,7 @@ export class MidiWrapper implements SurfaceInstance {
 
 	readonly #noteOnOffListeners: Map<number, MidiButtonDefinition> = new Map()
 	readonly #ccListeners: Map<number, MidiButtonDefinition> = new Map()
+	#extendedMode: boolean = false
 
 	/**
 	 * Last drawn colours, to allow resending when brightness changes
@@ -69,60 +70,7 @@ export class MidiWrapper implements SurfaceInstance {
 	}
 
 	async init(): Promise<void> {
-		// Future: could there be multiple listeners for one note?
-		for (const button of this.#layout.buttons) {
-			const noteIdx = button.channel * 128 + button.note
-			switch (button.type) {
-				case 'noteon':
-				case 'noteon-encoder':
-					this.#noteOnOffListeners.set(noteIdx, button)
-					break
-				case 'cc':
-				case 'cc-encoder':
-					this.#ccListeners.set(noteIdx, button)
-					break
-				default:
-					assertNever(button.type)
-					this.#logger.warn(`Unknown button in layout: ${button.id}`)
-					break
-			}
-		}
-
-		// Extra buttons that are not really buttons, but just helpful tools
-		for (const button of this.#layout.extraButtons ?? []) {
-			const noteIdx = button.channel * 128 + button.note
-			switch (button.type) {
-				case 'noteon':
-				case 'noteon-encoder':
-					this.#noteOnOffListeners.set(noteIdx, button)
-					break
-				case 'cc':
-				case 'cc-encoder':
-					this.#ccListeners.set(noteIdx, button)
-					break
-				default:
-					assertNever(button.type)
-					this.#logger.warn(`Unknown button in layout: ${button.id}`)
-					break
-			}
-		}
-
-		// Extra inputs from the device, such as encoders, etc
-		for (const variable of this.#layout.transferVariables?.filter((variable) => variable.type === 'input') ?? []) {
-			const button: MidiButtonDefinition = {
-				...variable,
-				type: (variable.msg_type + '-encoder') as 'cc-encoder' | 'noteon-encoder',
-			}
-			const noteIdx = button.channel * 128 + button.note
-			switch (variable.msg_type) {
-				case 'noteon':
-					this.#noteOnOffListeners.set(noteIdx, button)
-					break
-				case 'cc':
-					this.#ccListeners.set(noteIdx, button)
-					break
-			}
-		}
+		this.#configureLayoutListeners()
 
 		this.#input.on('noteon', (note, velocity, info) => {
 			this.#logger.debug(`MIDI noteon received: note=${note} velocity=${velocity} info=${JSON.stringify(info)}`)
@@ -207,6 +155,74 @@ export class MidiWrapper implements SurfaceInstance {
 		await this.blank()
 	}
 
+	#configureLayoutListeners(): void {
+		this.#noteOnOffListeners.clear()
+		this.#ccListeners.clear()
+
+		// Future: could there be multiple listeners for one note?
+		for (const button of this.#layout.buttons) {
+			if (button.extendedModeOnly) console.log(button, this.#extendedMode)
+			if (button.extendedModeOnly && !this.#extendedMode) continue
+			const noteIdx = button.channel * 128 + button.note
+			switch (button.type) {
+				case 'noteon':
+				case 'noteon-encoder':
+					this.#noteOnOffListeners.set(noteIdx, button)
+					break
+				case 'cc':
+				case 'cc-encoder':
+					this.#ccListeners.set(noteIdx, button)
+					break
+				default:
+					assertNever(button.type)
+					this.#logger.warn(`Unknown button in layout: ${button.id}`)
+					break
+			}
+		}
+
+		// Extra buttons that are not really buttons, but just helpful tools
+		for (const button of this.#layout.extraButtons ?? []) {
+			if (button.extendedModeOnly && !this.#extendedMode) continue
+			const noteIdx = button.channel * 128 + button.note
+			switch (button.type) {
+				case 'noteon':
+				case 'noteon-encoder':
+					this.#noteOnOffListeners.set(noteIdx, button)
+					break
+				case 'cc':
+				case 'cc-encoder':
+					this.#ccListeners.set(noteIdx, button)
+					break
+				default:
+					assertNever(button.type)
+					this.#logger.warn(`Unknown button in layout: ${button.id}`)
+					break
+			}
+		}
+
+		// Extra inputs from the device, such as encoders, etc
+		for (const variable of this.#layout.transferVariables?.filter((variable) => variable.type === 'input') ?? []) {
+			if (variable.extendedModeOnly && !this.#extendedMode) continue
+			const button: MidiButtonDefinition = {
+				...variable,
+				type: (variable.msg_type + '-encoder') as 'cc-encoder' | 'noteon-encoder',
+			}
+			const noteIdx = button.channel * 128 + button.note
+			switch (variable.msg_type) {
+				case 'noteon':
+					this.#noteOnOffListeners.set(noteIdx, button)
+					break
+				case 'cc':
+					this.#ccListeners.set(noteIdx, button)
+					break
+				default:
+					assertNever(variable.msg_type)
+					this.#logger.warn(`Unknown variable in layout: ${variable.id}`)
+					break
+			}
+		}
+	}
+
 	async close(): Promise<void> {
 		this.#logger.debug('Connection closed')
 		clearInterval(this.#checkInterval)
@@ -228,8 +244,9 @@ export class MidiWrapper implements SurfaceInstance {
 		// Not used
 	}
 
-	async updateConfig(_config: Record<string, any>): Promise<void> {
-		// Not used
+	async updateConfig(config: Record<string, any>): Promise<void> {
+		this.#extendedMode = config?.extendedMode === true
+		this.#configureLayoutListeners()
 	}
 
 	async ready(): Promise<void> {}

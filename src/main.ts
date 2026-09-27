@@ -46,7 +46,13 @@ const MidiPlugin: SurfacePlugin<MidiDeviceInfo> = {
 					description: `MIDI Port ${i}: ${name}`,
 					pluginInfo: {
 						inputPortName: name,
-						outputPortName: deviceMapping.outputName ?? outputs.find((output) => output === name) ?? name,
+						outputPortName:
+							outputs.find(
+								(output) =>
+									(deviceMapping.outputName ? output === deviceMapping.outputName : false) ||
+									output === name ||
+									output.replace(/ [0-9]+$/m, '') === name,
+							) ?? name,
 						layout: deviceMapping.layout,
 					},
 				})
@@ -71,7 +77,8 @@ const MidiPlugin: SurfacePlugin<MidiDeviceInfo> = {
 
 			// Use index based off name (as name already gets an index number after the port name when duplicate name), then just indexOf
 			input.openPort(getInputs().indexOf(inputPortName))
-			output.openPort(getOutputs().indexOf(outputPortName)) // TODO - check if this is good?
+			const outputPortIndex = getOutputs().indexOf(outputPortName)
+			if (outputPortIndex > -1) output.openPort(outputPortIndex) // TODO what to do when this is not found?
 
 			return {
 				surface: new MidiWrapper(surfaceId, input, output, inputPortName, outputPortName, context, layout),
@@ -81,7 +88,18 @@ const MidiPlugin: SurfacePlugin<MidiDeviceInfo> = {
 					surfaceLayout: createSurfaceSchema(layout),
 					pincodeMap: createPincodeMap(layout),
 					transferVariables: layout.transferVariables ?? [],
-					configFields: null,
+					configFields: [
+						{
+							id: 'extendedMode',
+							type: 'checkbox',
+							label: 'Enable extended mode',
+							description:
+								'SOME devices contain extra buttons that do not have color support, and therefor will not be usable by default.\n' +
+								'But if you really care about utilizing those buttons, you can enable this. Just be aware those extra buttons do not have color support or only one color.',
+							isVisibleExpression: `${layout.buttons.find((btn) => btn.extendedModeOnly === true) ? 1 : 0} == 1`,
+							default: false,
+						},
+					],
 					location: null,
 				},
 			}

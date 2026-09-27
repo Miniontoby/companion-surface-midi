@@ -1,0 +1,143 @@
+name: Device Request
+description: Request a new MIDI device to be added to this module
+title: '[New Device]: '
+labels:
+  - enhancement
+body:
+  - type: checkboxes
+    attributes:
+      label: Make sure you have updated to the latest version of the module
+      description: This may be a beta version of the module, or may require you to update your companion.
+      options:
+        - label: I have checked this on the latest version of the module
+          required: true
+  - type: checkboxes
+    attributes:
+      label: Is there an existing issue for this?
+      description: Please search to see if an issue already exists for the feature.
+      options:
+        - label: I have searched for similar existing issues
+          required: true
+  - type: textarea
+    id: device-name
+    attributes:
+      label: The name of the device
+      description: The company/brand name of the MIDI device AND the device name itself including the model name/number.
+    validations:
+      required: true
+  - type: textarea
+    id: documentation
+    attributes:
+      label: MIDI protocol documentation
+      description: |
+        Please provide any MIDI protocol definition/specs/references you can find for your MIDI device. Just google it and check if it is for your specific model.  
+        Preferably we get a PDF with all the MIDI related documentation, but a link to like a knowledge base site with the same MIDI related documentation is also fine.  
+        Just avoid giving us User Guides that do not include anything related to MIDI.
+
+        - For Novation they got Programmers references: https://fael-downloads-prod.focusrite.com/customer/prod/downloads/launchkey_mk3_programmer_s_reference_guide_v1_en.pdf  
+          You can find these under https://downloads.novationmusic.com/novation most of the time.
+        - For Akai they got Communication Protocol references: https://cdn.inmusicbrands.com/akai/attachments/APC%20mini%20mk2%20-%20Communication%20Protocol%20-%20v1.0.pdf.  
+          You can find these under https://www.akaipro.com/downloads-and-support/downloads/ most of the time.
+          Some of those only have a user guide, and most of the time those do not include any MIDI specifications, so user guides are mostly useless.
+
+        If you cannot find any documentation, please use some kind of midi input logger, and then write down for each button it's NoteOn/NoteOff with channel and note, or its CC/ControlChange with channel and control (and value).  
+        An app like Protokol by Hexler.net is able to log the midi input events. You'll need to write down which values for each button you press, tho.
+
+        Without any of this info, we cannot add support for your device.
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        Please gather some information about your MIDI device.
+        We need to get the MIDI input and output port names, and preferably for as many platforms (Windows, Linux, Mac) as you can get it from.
+
+        You can get them preferably using this python code, that does require you to run `pip3 install mido python-rtmidi`:
+        ```py
+        # pip3 install mido python-rtmidi
+        import mido
+        inputs = mido.get_input_names()
+        outputs = mido.get_output_names()
+        print('Inputs: %s\n\nOutputs: %s\n' % (inputs, outputs,))
+        ```
+        Or alternatively, if you are already using that Protokol app, that one also shows the port names in the settings and in the logs.
+
+        Do note:
+        - On linux there's a certain format to these: `DeviceName:FullModelName AnyNumber:ASpecificNumber`.
+          The AnyNumber will be replaced by a regular expression `([0-9]+)` so we can ignore that number, since it just represents the USB port you plug into.
+        - On Windows, the python code will give you a name with a number at the end. That number is just index number, and will be ignored.
+  - type: textarea
+    id: input-port
+    attributes:
+      label: Input port name
+      description: |
+        The MIDI input port name that should be used to check for button presses, per platform. (Check above for instructions)
+
+        examples:
+          - **Linux**: `Launchpad Pro:Launchpad Pro Live Port ([0-9]+):0`
+          - **Windows**: `Launchpad Pro`
+          - **Mac**: Unknown
+      value: |
+          - Linux:
+          - Windows:
+          - Mac:
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    id: output-port
+    attributes:
+      label: Output port name
+      description: |
+        The MIDI output port name that should be used to provide feedback and colors to the buttons, per platform. (Check above for instructions)
+
+        examples:
+          - **Linux**: `Launchpad Pro:Launchpad Pro Live Port ([0-9]+):0`
+          - **Windows**: `Launchpad Pro`
+          - **Mac**: Unknown
+      value: |
+          - Linux:
+          - Windows:
+          - Mac:
+      render: markdown
+    validations:
+      required: true
+  - type: dropdown
+    id: colored-buttons
+    attributes:
+      label: Device supports colored buttons?
+      description: |
+        Does this device support to color the buttons via MIDI?
+
+        Just select what fits best for the main grid. Some devices like Akai's APC MK2 have extra buttons around the edge that are 1 color only, but the grid has RGB
+      options:
+        - "Yes, full RGB (full 24 bits of color: 0-255 x 3)"
+        - "Yes, RGB (only 21 bits of color: 0-127 x 3)"
+        - "Yes, RGB (only 18 bits of color: 0-64 x 3)"
+        - "Yes, but only 255 presets"
+        - "Yes, but only 127 presets"
+        - "Yes, but only a few colors (e.g. 3)"
+        - "No, only 1 color: On or Off"
+        - "No, the buttons do not have LEDs"
+      default: 0
+    validations:
+      required: true
+  - type: textarea
+    id: extra-buttons
+    attributes:
+      label: Device contains seperate buttons
+      description: |
+        Does this device contain **extra** buttons with a label for like Left/Right or Up/Down?  
+        And if so, which midi command/bytes/channel/note are those being send to/received from?
+
+        *This is used for being able to change page without requiring you to put a page up/down button on your grid. Only for those devices that actually have a physical EXTRA button for that, that is not on the grid*
+    validations:
+      required: false
+  - type: checkboxes
+    id: available-for-testing
+    attributes:
+      label: Available for pre-release testing?
+      description: Are you available for pre-release testing when the code is finished?
+      options:
+        - label: I am available to help test the implementation
+          required: false

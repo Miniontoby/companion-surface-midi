@@ -2,7 +2,10 @@ import type { SurfaceSchemaLayoutDefinition } from '@companion-surface/base'
 import type { MidiLayoutDefinition } from './tmp-layout.js'
 import { parseControlId } from './util.js'
 
-export function createSurfaceSchema(layout: MidiLayoutDefinition): SurfaceSchemaLayoutDefinition {
+export function createSurfaceSchema(
+	layout: MidiLayoutDefinition,
+	// extendedMode: boolean = false,
+): SurfaceSchemaLayoutDefinition {
 	const surfaceLayout: SurfaceSchemaLayoutDefinition = {
 		stylePresets: {
 			default: {
@@ -18,6 +21,7 @@ export function createSurfaceSchema(layout: MidiLayoutDefinition): SurfaceSchema
 	}
 
 	for (const button of layout.buttons) {
+		// if (button.extendedModeOnly === true && !extendedMode) continue // skip these
 		const { row, column } = parseControlId(button.id)
 		surfaceLayout.controls[button.id] = {
 			row: row,

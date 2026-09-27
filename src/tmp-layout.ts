@@ -8,31 +8,45 @@ export interface MidiButtonDefinition {
 	type: 'noteon' | 'cc' | 'cc-encoder' | 'noteon-encoder'
 	channel: number
 	note: number
+	extendedModeOnly?: true
 }
 
 export interface MidiLayoutDefinition {
+	/** Does this surface support full RGB range, so we can apply brightness to it? */
 	supportsBrightness: boolean
+	/** Do we have extraButtons that we can utilize for changePage actions? If so, label which button Can Change Page */
 	canChangePage?: { label: string } | undefined
+	/** All the buttons of the main grid */
 	buttons: MidiButtonDefinition[]
+	/** Extra buttons that do not belong in the grid. For example dedicated page up/down buttons */
 	extraButtons?: (MidiButtonDefinition & { id: 'page/left' | 'page/right' })[]
+	/** Extra variables for input or output. For example encoders/sliders as inputs, or extra lights as outputs */
 	transferVariables?: Array<
 		| (SurfaceInputVariable & Omit<MidiButtonDefinition, 'type'> & { msg_type: 'noteon' | 'cc' })
 		| (SurfaceOutputVariable & { callback: (output: Output, value: unknown) => void })
 	>
+	/** MidiMessage/bytes to startup/clear the device. Also like just for when stuff dangles around, to just reset the colors. For example by exiting and entering DAW/programmer mode, and requesting slider/fader values, or just setting some settings */
 	command_clearPanel: () => MidiMessage[]
+	/** MidiMessage/bytes to clean up the device before closing the connection */
 	command_shutdown: () => MidiMessage[]
+	/** MidiMessage/bytes to send the color to the controlId button */
 	command_writeKeyColour: (controlId: string, color: RgbColor) => MidiMessage
+	/** Utility for those devices that do not have a full RGB range. Used to check if the current grabbed color of your companion button is too dark to even show up on the device, and then it will try another location instead */
 	isColorTooBlack: (color: RgbColor) => boolean
+	/** Extra function to parse a Sysex message. For example when you requested the slider/fader values using the command_clearPanel and then you receive it back using sysex */
 	parseSysex?: (context: SurfaceContext, bytes: Buffer<ArrayBufferLike>) => void
 }
+
+// TODO - this should be moved to a json file kind of system or something...
 
 ///////////////////////////////
 // Launchpad MK2 collection: //
 ///////////////////////////////
 
-// TODO - this should be moved to a json schema..
 // TODO still needs testing
 const NovationLaunchpadMiniLayoutTest: MidiLayoutDefinition = {
+	// https://fael-downloads-prod.focusrite.com/customer/prod/s3fs-public/novation/downloads/10780/launchpad-s-and-mini-advanced-features-guide.pdf
+	// Not really helpful documentation tho.
 	supportsBrightness: true,
 	buttons: [
 		// Row 0 - cc 104-112
@@ -152,6 +166,7 @@ const NovationLaunchpadMiniLayoutTest: MidiLayoutDefinition = {
 
 // Works
 const NovationLaunchpadProLayout: MidiLayoutDefinition = {
+	// https://fael-downloads-prod.focusrite.com/customer/prod/s3fs-public/downloads/Launchpad%20Pro%20Programmers%20Reference%20Guide%201.01.pdf
 	supportsBrightness: true,
 	buttons: [
 		// Row 0 - cc 91-98
@@ -307,6 +322,8 @@ const NovationLaunchpadProLayout: MidiLayoutDefinition = {
 
 // Works
 const NovationLaunchpadMK2Layout: MidiLayoutDefinition = {
+	// https://fael-downloads-prod.focusrite.com/customer/prod/s3fs-public/downloads/Launchpad%20MK2%20Programmers%20Reference%20Manual%20v1.03.pdf
+	// or even https://fael-downloads-prod.focusrite.com/customer/prod/s3fs-public/novation/downloads/10535/prg-max-files-v1.zip
 	...NovationLaunchpadProLayout,
 	buttons: [
 		// Row 0 - cc 91-99
@@ -318,7 +335,7 @@ const NovationLaunchpadMK2Layout: MidiLayoutDefinition = {
 		{ id: '0/5', type: 'cc', channel: 0, note: 109 },
 		{ id: '0/6', type: 'cc', channel: 0, note: 110 },
 		{ id: '0/7', type: 'cc', channel: 0, note: 111 },
-		{ id: '0/8', type: 'cc', channel: 0, note: -1 },
+		{ id: '0/8', type: 'cc', channel: 0, note: -1 }, // Placeholder. This one doesn't actually exist
 
 		// Row 1 - notes 81-89
 		{ id: '1/0', type: 'noteon', channel: 0, note: 81 },
@@ -434,6 +451,7 @@ const NovationLaunchpadMK2Layout: MidiLayoutDefinition = {
 
 // TODO still needs testing
 const NovationLaunchpadXMK3Layout: MidiLayoutDefinition = {
+	// https://fael-downloads-prod.focusrite.com/customer/prod/s3fs-public/downloads/Launchpad%20X%20-%20Programmers%20Reference%20Manual.pdf
 	...NovationLaunchpadProLayout, // Same clearPanel and shutdown functions!
 	buttons: [
 		// Row 0 - cc 91-99
@@ -562,6 +580,7 @@ const NovationLaunchpadXMK3Layout: MidiLayoutDefinition = {
 /*
 // TODO still needs testing
 const NovationLaunchpadProMK3Layout: MidiLayoutDefinition = {
+	// https://fael-downloads-prod.focusrite.com/customer/prod/s3fs-public/downloads/LPP3_prog_ref_guide_200415.pdf
 	...NovationLaunchpadXMK3Layout, // I DONT KNOW
 	command_clearPanel: function () {
 		// Turn on programmer mode
@@ -595,6 +614,7 @@ const NovationLaunchpadProMK3Layout: MidiLayoutDefinition = {
 
 // Works
 const NovationLaunchpadMiniMK3Layout: MidiLayoutDefinition = {
+	// https://fael-downloads-prod.focusrite.com/customer/prod/s3fs-public/downloads/Launchpad%20Mini%20-%20Programmers%20Reference%20Manual.pdf
 	...NovationLaunchpadXMK3Layout, // same layout
 	command_clearPanel: function () {
 		// Turn on programmer mode
@@ -645,6 +665,7 @@ const NovationLaunchkeyMiniMK3Layout: MidiLayoutDefinition = {
 		{ id: '0/6', type: 'noteon', channel: 9, note: 50 },
 		{ id: '0/7', type: 'noteon', channel: 9, note: 51 },
 		{ id: '0/8', type: 'cc', channel: 0, note: 104 },
+		{ id: '0/9', type: 'cc', channel: 15, note: 115, extendedModeOnly: true }, // Play button - Does not support RGB: off/dimmed/on white - Extended mode only
 
 		// Row 2 - notes 9-16 plus "Stop/Solo/Mute" button
 		{ id: '1/0', type: 'noteon', channel: 9, note: 36 },
@@ -656,6 +677,7 @@ const NovationLaunchkeyMiniMK3Layout: MidiLayoutDefinition = {
 		{ id: '1/6', type: 'noteon', channel: 9, note: 46 },
 		{ id: '1/7', type: 'noteon', channel: 9, note: 47 },
 		{ id: '1/8', type: 'cc', channel: 0, note: 105 },
+		{ id: '1/9', type: 'cc', channel: 15, note: 117, extendedModeOnly: true }, // Record button - Does not support RGB: off/dimmed/on white - Extended mode only
 	],
 	extraButtons: [
 		{ id: 'page/left', type: 'cc', channel: 15, note: 103 },
@@ -727,6 +749,9 @@ const NovationLaunchkeyMiniMK3Layout: MidiLayoutDefinition = {
 			channel: 15,
 			note: 28,
 		},
+
+		/*
+		// This does work, but extendedMode is now a thing, so technically you can use that now and a black or white background
 		{
 			id: 'output-play-btn',
 			name: 'Play button light up',
@@ -747,10 +772,11 @@ const NovationLaunchkeyMiniMK3Layout: MidiLayoutDefinition = {
 			callback(output: Output, value: unknown): void {
 				if (typeof value === 'number' && value >= 0 && value <= 127) {
 					// CC ch=15, control=117
-					output.sendMessage([0xb0 | (15 & 0x0f), 115 & 0x7f, value & 0x7f])
+					output.sendMessage([0xb0 | (15 & 0x0f), 117 & 0x7f, value & 0x7f])
 				}
 			},
 		},
+		*/
 	],
 	command_clearPanel: function () {
 		return [
@@ -770,6 +796,14 @@ const NovationLaunchkeyMiniMK3Layout: MidiLayoutDefinition = {
 		const button = this.buttons.find((btn) => btn.id === controlId)
 		if (!button) return []
 
+		if (button.extendedModeOnly) {
+			return [
+				(button.type === 'noteon' ? 0x90 : 0xb0) | (button.channel & 0x0f),
+				button.note & 0x7f,
+				this.isColorTooBlack(color) ? 0 : 127,
+			]
+		}
+
 		const lpColorIndex = getClosestLpColor(color)
 		return [(button.type === 'noteon' ? 0x90 : 0xb0) | (button.channel & 0x0f), button.note & 0x7f, lpColorIndex & 0x7f]
 	},
@@ -778,90 +812,110 @@ const NovationLaunchkeyMiniMK3Layout: MidiLayoutDefinition = {
 	},
 }
 
+// Works
 const AkaiAPCMiniMK2Layout: MidiLayoutDefinition = {
 	// https://cdn.inmusicbrands.com/akai/attachments/APC%20mini%20mk2%20-%20Communication%20Protocol%20-%20v1.0.pdf
 	supportsBrightness: true, // Brightness for preset colors would be done using the channel number: 0 = 10%, 1 = 25%, 2 = 50%, 3 = 65%, 4 = 75%, 5 = 90%, 6 = 100% but we have full RGB
 	canChangePage: { label: 'Track button 7 & 8 (arrow left and right) change Page' },
 	buttons: [
 		// Row 1
-		{ id: '0/0', type: 'noteon', channel: 0, note: 56 },
-		{ id: '0/1', type: 'noteon', channel: 0, note: 57 },
-		{ id: '0/2', type: 'noteon', channel: 0, note: 58 },
-		{ id: '0/3', type: 'noteon', channel: 0, note: 59 },
-		{ id: '0/4', type: 'noteon', channel: 0, note: 60 },
-		{ id: '0/5', type: 'noteon', channel: 0, note: 61 },
-		{ id: '0/6', type: 'noteon', channel: 0, note: 62 },
-		{ id: '0/7', type: 'noteon', channel: 0, note: 63 },
+		{ id: '0/0', type: 'noteon', channel: 0, note: 0x38 },
+		{ id: '0/1', type: 'noteon', channel: 0, note: 0x39 },
+		{ id: '0/2', type: 'noteon', channel: 0, note: 0x3a },
+		{ id: '0/3', type: 'noteon', channel: 0, note: 0x3b },
+		{ id: '0/4', type: 'noteon', channel: 0, note: 0x3c },
+		{ id: '0/5', type: 'noteon', channel: 0, note: 0x3d },
+		{ id: '0/6', type: 'noteon', channel: 0, note: 0x3e },
+		{ id: '0/7', type: 'noteon', channel: 0, note: 0x3f },
+		{ id: '0/8', type: 'noteon', channel: 0, note: 0x70, extendedModeOnly: true }, // Scene Launch - Does not support RGB: off/on green - Extended mode only
 
 		// Row 2
-		{ id: '1/0', type: 'noteon', channel: 0, note: 48 },
-		{ id: '1/1', type: 'noteon', channel: 0, note: 49 },
-		{ id: '1/2', type: 'noteon', channel: 0, note: 50 },
-		{ id: '1/3', type: 'noteon', channel: 0, note: 51 },
-		{ id: '1/4', type: 'noteon', channel: 0, note: 52 },
-		{ id: '1/5', type: 'noteon', channel: 0, note: 53 },
-		{ id: '1/6', type: 'noteon', channel: 0, note: 54 },
-		{ id: '1/7', type: 'noteon', channel: 0, note: 55 },
+		{ id: '1/0', type: 'noteon', channel: 0, note: 0x30 },
+		{ id: '1/1', type: 'noteon', channel: 0, note: 0x31 },
+		{ id: '1/2', type: 'noteon', channel: 0, note: 0x32 },
+		{ id: '1/3', type: 'noteon', channel: 0, note: 0x33 },
+		{ id: '1/4', type: 'noteon', channel: 0, note: 0x34 },
+		{ id: '1/5', type: 'noteon', channel: 0, note: 0x35 },
+		{ id: '1/6', type: 'noteon', channel: 0, note: 0x36 },
+		{ id: '1/7', type: 'noteon', channel: 0, note: 0x37 },
+		{ id: '1/8', type: 'noteon', channel: 0, note: 0x71, extendedModeOnly: true }, // Scene Launch - Does not support RGB: off/on green - Extended mode only
 
 		// Row 3
-		{ id: '2/0', type: 'noteon', channel: 0, note: 40 },
-		{ id: '2/1', type: 'noteon', channel: 0, note: 41 },
-		{ id: '2/2', type: 'noteon', channel: 0, note: 42 },
-		{ id: '2/3', type: 'noteon', channel: 0, note: 43 },
-		{ id: '2/4', type: 'noteon', channel: 0, note: 44 },
-		{ id: '2/5', type: 'noteon', channel: 0, note: 45 },
-		{ id: '2/6', type: 'noteon', channel: 0, note: 46 },
-		{ id: '2/7', type: 'noteon', channel: 0, note: 47 },
+		{ id: '2/0', type: 'noteon', channel: 0, note: 0x28 },
+		{ id: '2/1', type: 'noteon', channel: 0, note: 0x29 },
+		{ id: '2/2', type: 'noteon', channel: 0, note: 0x2a },
+		{ id: '2/3', type: 'noteon', channel: 0, note: 0x2b },
+		{ id: '2/4', type: 'noteon', channel: 0, note: 0x2c },
+		{ id: '2/5', type: 'noteon', channel: 0, note: 0x2d },
+		{ id: '2/6', type: 'noteon', channel: 0, note: 0x2e },
+		{ id: '2/7', type: 'noteon', channel: 0, note: 0x2f },
+		{ id: '2/8', type: 'noteon', channel: 0, note: 0x72, extendedModeOnly: true }, // Scene Launch - Does not support RGB: off/on green - Extended mode only
 
 		// Row 4
-		{ id: '3/0', type: 'noteon', channel: 0, note: 32 },
-		{ id: '3/1', type: 'noteon', channel: 0, note: 33 },
-		{ id: '3/2', type: 'noteon', channel: 0, note: 34 },
-		{ id: '3/3', type: 'noteon', channel: 0, note: 35 },
-		{ id: '3/4', type: 'noteon', channel: 0, note: 36 },
-		{ id: '3/5', type: 'noteon', channel: 0, note: 37 },
-		{ id: '3/6', type: 'noteon', channel: 0, note: 38 },
-		{ id: '3/7', type: 'noteon', channel: 0, note: 39 },
+		{ id: '3/0', type: 'noteon', channel: 0, note: 0x20 },
+		{ id: '3/1', type: 'noteon', channel: 0, note: 0x21 },
+		{ id: '3/2', type: 'noteon', channel: 0, note: 0x22 },
+		{ id: '3/3', type: 'noteon', channel: 0, note: 0x23 },
+		{ id: '3/4', type: 'noteon', channel: 0, note: 0x24 },
+		{ id: '3/5', type: 'noteon', channel: 0, note: 0x25 },
+		{ id: '3/6', type: 'noteon', channel: 0, note: 0x26 },
+		{ id: '3/7', type: 'noteon', channel: 0, note: 0x27 },
+		{ id: '3/8', type: 'noteon', channel: 0, note: 0x73, extendedModeOnly: true }, // Scene Launch - Does not support RGB: off/on green - Extended mode only
 
 		// Row 5
-		{ id: '4/0', type: 'noteon', channel: 0, note: 24 },
-		{ id: '4/1', type: 'noteon', channel: 0, note: 25 },
-		{ id: '4/2', type: 'noteon', channel: 0, note: 26 },
-		{ id: '4/3', type: 'noteon', channel: 0, note: 27 },
-		{ id: '4/4', type: 'noteon', channel: 0, note: 28 },
-		{ id: '4/5', type: 'noteon', channel: 0, note: 29 },
-		{ id: '4/6', type: 'noteon', channel: 0, note: 30 },
-		{ id: '4/7', type: 'noteon', channel: 0, note: 31 },
+		{ id: '4/0', type: 'noteon', channel: 0, note: 0x18 },
+		{ id: '4/1', type: 'noteon', channel: 0, note: 0x19 },
+		{ id: '4/2', type: 'noteon', channel: 0, note: 0x1a },
+		{ id: '4/3', type: 'noteon', channel: 0, note: 0x1b },
+		{ id: '4/4', type: 'noteon', channel: 0, note: 0x1c },
+		{ id: '4/5', type: 'noteon', channel: 0, note: 0x1d },
+		{ id: '4/6', type: 'noteon', channel: 0, note: 0x1e },
+		{ id: '4/7', type: 'noteon', channel: 0, note: 0x1f },
+		{ id: '4/8', type: 'noteon', channel: 0, note: 0x74, extendedModeOnly: true }, // Scene Launch - Does not support RGB: off/on green - Extended mode only
 
 		// Row 6
-		{ id: '5/0', type: 'noteon', channel: 0, note: 16 },
-		{ id: '5/1', type: 'noteon', channel: 0, note: 17 },
-		{ id: '5/2', type: 'noteon', channel: 0, note: 18 },
-		{ id: '5/3', type: 'noteon', channel: 0, note: 19 },
-		{ id: '5/4', type: 'noteon', channel: 0, note: 20 },
-		{ id: '5/5', type: 'noteon', channel: 0, note: 21 },
-		{ id: '5/6', type: 'noteon', channel: 0, note: 22 },
-		{ id: '5/7', type: 'noteon', channel: 0, note: 23 },
+		{ id: '5/0', type: 'noteon', channel: 0, note: 0x10 },
+		{ id: '5/1', type: 'noteon', channel: 0, note: 0x11 },
+		{ id: '5/2', type: 'noteon', channel: 0, note: 0x12 },
+		{ id: '5/3', type: 'noteon', channel: 0, note: 0x13 },
+		{ id: '5/4', type: 'noteon', channel: 0, note: 0x14 },
+		{ id: '5/5', type: 'noteon', channel: 0, note: 0x15 },
+		{ id: '5/6', type: 'noteon', channel: 0, note: 0x16 },
+		{ id: '5/7', type: 'noteon', channel: 0, note: 0x17 },
+		{ id: '5/8', type: 'noteon', channel: 0, note: 0x75, extendedModeOnly: true }, // Scene Launch - Does not support RGB: off/on green - Extended mode only
 
 		// Row 7
-		{ id: '6/0', type: 'noteon', channel: 0, note: 8 },
-		{ id: '6/1', type: 'noteon', channel: 0, note: 9 },
-		{ id: '6/2', type: 'noteon', channel: 0, note: 10 },
-		{ id: '6/3', type: 'noteon', channel: 0, note: 11 },
-		{ id: '6/4', type: 'noteon', channel: 0, note: 12 },
-		{ id: '6/5', type: 'noteon', channel: 0, note: 13 },
-		{ id: '6/6', type: 'noteon', channel: 0, note: 14 },
-		{ id: '6/7', type: 'noteon', channel: 0, note: 15 },
+		{ id: '6/0', type: 'noteon', channel: 0, note: 0x08 },
+		{ id: '6/1', type: 'noteon', channel: 0, note: 0x09 },
+		{ id: '6/2', type: 'noteon', channel: 0, note: 0x0a },
+		{ id: '6/3', type: 'noteon', channel: 0, note: 0x0b },
+		{ id: '6/4', type: 'noteon', channel: 0, note: 0x0c },
+		{ id: '6/5', type: 'noteon', channel: 0, note: 0x0d },
+		{ id: '6/6', type: 'noteon', channel: 0, note: 0x0e },
+		{ id: '6/7', type: 'noteon', channel: 0, note: 0x0f },
+		{ id: '6/8', type: 'noteon', channel: 0, note: 0x76, extendedModeOnly: true }, // Scene Launch - Does not support RGB: off/on green - Extended mode only
 
 		// Row 8
-		{ id: '7/0', type: 'noteon', channel: 0, note: 0 },
-		{ id: '7/1', type: 'noteon', channel: 0, note: 1 },
-		{ id: '7/2', type: 'noteon', channel: 0, note: 2 },
-		{ id: '7/3', type: 'noteon', channel: 0, note: 3 },
-		{ id: '7/4', type: 'noteon', channel: 0, note: 4 },
-		{ id: '7/5', type: 'noteon', channel: 0, note: 5 },
-		{ id: '7/6', type: 'noteon', channel: 0, note: 6 },
-		{ id: '7/7', type: 'noteon', channel: 0, note: 7 },
+		{ id: '7/0', type: 'noteon', channel: 0, note: 0x00 },
+		{ id: '7/1', type: 'noteon', channel: 0, note: 0x01 },
+		{ id: '7/2', type: 'noteon', channel: 0, note: 0x02 },
+		{ id: '7/3', type: 'noteon', channel: 0, note: 0x03 },
+		{ id: '7/4', type: 'noteon', channel: 0, note: 0x04 },
+		{ id: '7/5', type: 'noteon', channel: 0, note: 0x05 },
+		{ id: '7/6', type: 'noteon', channel: 0, note: 0x06 },
+		{ id: '7/7', type: 'noteon', channel: 0, note: 0x07 },
+		{ id: '7/8', type: 'noteon', channel: 0, note: 0x77, extendedModeOnly: true }, // Scene Launch - Does not support RGB: off/on green - Extended mode only
+
+		// Row 9 - Track Buttons 1-8 - Does not support RGB: off/on red - Extended mode only
+		{ id: '8/0', type: 'noteon', channel: 0, note: 0x64, extendedModeOnly: true },
+		{ id: '8/1', type: 'noteon', channel: 0, note: 0x65, extendedModeOnly: true },
+		{ id: '8/2', type: 'noteon', channel: 0, note: 0x66, extendedModeOnly: true },
+		{ id: '8/3', type: 'noteon', channel: 0, note: 0x67, extendedModeOnly: true },
+		{ id: '8/4', type: 'noteon', channel: 0, note: 0x68, extendedModeOnly: true },
+		{ id: '8/5', type: 'noteon', channel: 0, note: 0x69, extendedModeOnly: true },
+		{ id: '8/6', type: 'noteon', channel: 0, note: 0x6a, extendedModeOnly: true },
+		{ id: '8/7', type: 'noteon', channel: 0, note: 0x6b, extendedModeOnly: true },
+		{ id: '8/8', type: 'noteon', channel: 0, note: 0x7a, extendedModeOnly: true }, // Shift button - Does not support color at all - Extended mode only
 	],
 	extraButtons: [
 		{ id: 'page/left', type: 'noteon', channel: 0, note: 0x6a },
@@ -953,6 +1007,14 @@ const AkaiAPCMiniMK2Layout: MidiLayoutDefinition = {
 		const button = this.buttons.find((btn) => btn.id === controlId)
 		if (!button) return []
 
+		if (button.extendedModeOnly) {
+			return [
+				(button.type === 'noteon' ? 0x90 : 0xb0) | (button.channel & 0x0f),
+				button.note & 0x7f,
+				this.isColorTooBlack(color) ? 0 : 127, // 0 = off, 1 and 3-127 = on, 2 = blink
+			]
+		}
+
 		return [
 			0xf0,
 			0x47,
@@ -1001,8 +1063,9 @@ const AkaiAPCMiniMK2Layout: MidiLayoutDefinition = {
 	},
 }
 
+// Works
 const AkaiAPCMiniLayout: MidiLayoutDefinition = {
-	// https://cdn.inmusicbrands.com/akai/apc-mini/APC%20mini%20-%20User%20Guide%20-%20v1.0.pdf_079659375431bb679d17071da25ad6af.pdf ??
+	// Works the same as the MK2 but only has 3 colors for the buttons. No specific documentation was found for this model.
 	...AkaiAPCMiniMK2Layout,
 	supportsBrightness: false, // NOPE, theres only 3 colors!!!
 	canChangePage: {
@@ -1031,6 +1094,7 @@ const AkaiAPCMiniLayout: MidiLayoutDefinition = {
 	},
 }
 
+// TODO still needs testing? I forgot
 const AkaiAPC40MK2Layout: MidiLayoutDefinition = {
 	// https://cdn.inmusicbrands.com/akai/attachments/apc40II/APC40Mk2_Communications_Protocol_v1.2.pdf
 	...AkaiAPCMiniLayout,
@@ -1326,7 +1390,9 @@ const AkaiAPC40MK2Layout: MidiLayoutDefinition = {
 	},
 }
 
+// Works
 const AkaiMpkMiniMk3Layout: MidiLayoutDefinition = {
+	// No known documentation. This one was done by 'bruteforcing' with a friend
 	supportsBrightness: false, // doesn't even support color...
 	buttons: [
 		// Bank B - Row 1
@@ -1366,6 +1432,7 @@ const AkaiMpkMiniMk3Layout: MidiLayoutDefinition = {
 	},
 }
 
+// TODO still needs testing
 const AkaiMIDImixLayout: MidiLayoutDefinition = {
 	// https://cdn.inmusicbrands.com/akai/attachments/MIDIMIX/MIDImix-UserGuide-v1.0.pdf
 	supportsBrightness: false, // doesn't even support color...
@@ -1687,7 +1754,9 @@ const AkaiMIDImixLayout: MidiLayoutDefinition = {
 }
 
 // https://www.bax-shop.nl/downloads/products/9000-0072-1850/ayra_digicon-1_user_manual_20210428.pdf
+// TODO add Ayra digicon 1 support someday
 
+// Regex devices, can technically use `$1` in the outputName to get the number of the regex
 export const DeviceMappings: { [input: string]: { outputName?: string; layout?: MidiLayoutDefinition } } = {
 	// Launchpad Mini MK2
 	// - Linux:

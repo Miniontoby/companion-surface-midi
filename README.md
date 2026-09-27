@@ -1,10 +1,15 @@
 # companion-surface-midi
 
 ~~This is a POC, and is not a finished or usable module. It is testing out some ideas on how a module could look, and could become the groundwork for a usable module.~~  
-This is a somwhat usable module.
+This is a somewhat usable module.
 
 ~~In its current state it is able to work with a novation launchpad mini, translating it to a sensible layout. But it does not handle disconnection or reconnection, button rgb or anything more.~~  
-In its current state it is able to work with a Novation Launchpad MK2, Novation Launchpad Pro, Novation Launchpad X???, Novation Launchkey Mini MK3, Akai APC Mini MK1/MK2, translating it to a sensible layout. But it does not handle disconnection or reconnection. It does support button colors.
+In its current state it is able to work with a Novation Launchpad MK2, Novation Launchpad Pro, Novation Launchpad X???, Novation Launchkey Mini MK3, Akai APC Mini MK1/MK2, translating it to a sensible layout. But it does not handle disconnection or reconnection. It does support button colors.  
+Every layout is hardcoded in, so if you want to use it for a device that is not yet in the list, it will not work, and you'll have to make a Device Request issue!  
+We are working on a system for allowing users to edit layouts on the fly, but due to limitations we cannot do that yet.
+
+**You should go to Settings -> Buttons -> Decorations. Set the dropdown to "Border".**  
+The value of Top Bar messes up the preview color of the buttons
 
 ## Design
 
@@ -19,13 +24,15 @@ Things to be figured out:
 - Properly define the midi surface schema, write it up as a json schema and move each definition to its own json file.
   This should make it fairly easy to add new ones, and to use the schema to create tooling to generate the schema
 - Look into making a webapp to generate/edit the schema for a surface. Use webmidi to build an interactive editor and visualiser?
-- Expand the schema to handle additional surface types; this should be done before the first usable release of this.
+- ~~Expand the schema to handle additional surface types; this should be done before the first usable release of this.~~
 - Make it possible to load a custom schema in as a surface config field?
   Perhaps include some simple ones intended to be used by other software to trigger companion over virtual ports?
-- How to handle device disconnections
-- How to handle new devices (polling?)
-- Should every midi device be always opened, or should there be some configuration to do so?
-- What is the midi port name on each platform. How should that be translated into a surfaceId
+- If we're going to make it more dynamic, we'll likely just add all midi input ports as devices, and then try to autodetect the output port, and allow users to change the output port if they need to with a dropdown config.
+- ~~How to handle device disconnections~~
+- ~~How to handle new devices (polling?)~~
+- ~~Should every midi device be always opened, or should there be some configuration to do so?~~
+- ~~What is the midi port name on each platform. How should that be translated into a surfaceId~~
+- ~~Add a config field to allow people to use more buttons that might not have color in them, which is why the main layout will exclude those~~
 - Probably more
 
 ---
@@ -73,3 +80,10 @@ The port names vary in format by platform;
   - Akai LPD8 MK2: `LPD8 mk2` (input and output)
   - Akai MPK mini 3: `MPK mini 3` (input and output)
   - Akai MIDI mix: `MIDI Mix ` (input and output)
+
+## Requesting MIDI device support
+
+When you have a MIDI device with colored buttons that is not yet supported, feel free to make an issue on the github to get it added.  
+But to make sure we don't just get "Can you add ... from ...?" without any other information. Please use the Device Request template to help us out.
+
+The instructions for adding your own device manually are also kind of documentated in that template.
