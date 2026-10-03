@@ -104,6 +104,7 @@ const MidiPlugin: SurfacePlugin<MidiDeviceInfo> = {
 			const outputPortIndex = getOutputs().indexOf(outputPortName)
 			if (outputPortIndex > -1) output.openPort(outputPortIndex)
 			else throw new Error('Failed to open output port')
+			// Leaving this one ^^ in for when we switch to allowing users to change output port for a surface, when we add all midi devices by default
 
 			return {
 				surface: new MidiWrapper(surfaceId, input, output, inputPortName, outputPortName, context, layout),
@@ -131,11 +132,13 @@ const MidiPlugin: SurfacePlugin<MidiDeviceInfo> = {
 		} catch (e) {
 			try {
 				input.closePort()
+				input.destroy()
 			} catch {
 				/* empty */
 			}
 			try {
 				output.closePort()
+				output.destroy()
 			} catch {
 				/* empty */
 			}

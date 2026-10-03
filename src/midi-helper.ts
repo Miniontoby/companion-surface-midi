@@ -5,32 +5,40 @@ let _output: Output | undefined = undefined
 
 export function getInputs(): string[] {
 	const inputs: string[] = []
-	_input ??= new Input() // Lazy load
-	for (let i = 0; i < _input.getPortCount(); i++) {
-		let counter = 0
-		const portName = _input.getPortName(i)
-		let numberedPortName = portName
-		while (inputs.includes(numberedPortName)) {
-			counter++
-			numberedPortName = `${portName} ${counter}`
+	try {
+		_input ??= new Input() // Lazy load
+		for (let i = 0; i < _input.getPortCount(); i++) {
+			let counter = 0
+			const portName = _input.getPortName(i)
+			let numberedPortName = portName
+			while (inputs.includes(numberedPortName)) {
+				counter++
+				numberedPortName = `${portName} ${counter}`
+			}
+			inputs.push(numberedPortName)
 		}
-		inputs.push(numberedPortName)
+	} catch {
+		/* empty */
 	}
 	return inputs
 }
 
 export function getOutputs(): string[] {
 	const outputs: string[] = []
-	_output ??= new Output() // Lazy load
-	for (let i = 0; i < _output.getPortCount(); i++) {
-		let counter = 0
-		const portName = _output.getPortName(i)
-		let numberedPortName = portName
-		while (outputs.includes(numberedPortName)) {
-			counter++
-			numberedPortName = `${portName} ${counter}`
+	try {
+		_output ??= new Output() // Lazy load
+		for (let i = 0; i < _output.getPortCount(); i++) {
+			let counter = 0
+			const portName = _output.getPortName(i)
+			let numberedPortName = portName
+			while (outputs.includes(numberedPortName)) {
+				counter++
+				numberedPortName = `${portName} ${counter}`
+			}
+			outputs.push(numberedPortName)
 		}
-		outputs.push(numberedPortName)
+	} catch {
+		/* empty */
 	}
 	return outputs
 }

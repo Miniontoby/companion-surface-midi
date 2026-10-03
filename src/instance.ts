@@ -114,7 +114,7 @@ export class MidiWrapper implements SurfaceInstance {
 					this.#context.keyUpById(listener.id)
 				}
 			} else if (listener.type === 'noteon-encoder') {
-				this.#context.sendVariableValue(listener.id, velocity)
+				this.#context.sendVariableValue(listener.id, 0)
 			}
 		})
 
@@ -278,8 +278,18 @@ export class MidiWrapper implements SurfaceInstance {
 		if (!this.#output.isPortOpen()) return
 
 		let color = drawProps.color ? parseColor(drawProps.color) : { r: 0, g: 0, b: 0 }
-		// Grab bitmap one pixel color if provided. This will make sure we can kind of provide a color change when pressed...
-		if (drawProps.image && drawProps.image.length >= 3) {
+
+		// using api 1.4.1+ it will provide an pressed property
+		if ('pressed' in drawProps) {
+			if (drawProps.pressed === true) {
+				color = {
+					r: 255,
+					g: 0,
+					b: 0,
+				}
+			}
+		} else if (drawProps.image && drawProps.image.length >= 3) {
+			// Grab bitmap one pixel color if provided. This will make sure we can kind of provide a color change when pressed...
 			color = {
 				r: drawProps.image[0],
 				g: drawProps.image[1],

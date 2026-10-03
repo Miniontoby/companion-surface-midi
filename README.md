@@ -4,7 +4,7 @@
 This is a somewhat usable module.
 
 ~~In its current state it is able to work with a novation launchpad mini, translating it to a sensible layout. But it does not handle disconnection or reconnection, button rgb or anything more.~~  
-In its current state it is able to work with a Novation Launchpad MK2, Novation Launchpad Pro, Novation Launchpad X???, Novation Launchkey Mini MK3, Akai APC Mini MK1/MK2, translating it to a sensible layout. But it does not handle disconnection or reconnection. It does support button colors.  
+In its current state it is able to work with a Novation Launchpad MK2, Novation Launchpad Pro, Novation Launchpad X???, Novation Launchkey Mini MK3, Akai APC Mini MK1/MK2, translating it to a sensible layout. And it does handle disconnection and reconnection.  
 Every layout is hardcoded in, so if you want to use it for a device that is not yet in the list, it will not work, and you'll have to make a Device Request issue!  
 We are working on a system for allowing users to edit layouts on the fly, but due to limitations we cannot do that yet.
 

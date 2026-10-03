@@ -8,6 +8,8 @@ export function parseControlId(controlId: string): { row: number; column: number
 	}
 }
 
+const SKIP = 0xff000000
+
 function getClosestColor(colors: Uint32Array, rgb: RgbColor): number {
 	const { r, g, b } = rgb
 	let minDistance = Infinity
@@ -15,7 +17,7 @@ function getClosestColor(colors: Uint32Array, rgb: RgbColor): number {
 
 	for (let i = 0; i < colors.length; i++) {
 		const color = colors[i]
-		if (color === -1) continue
+		if (color === SKIP) continue
 		const dr = r - ((color >> 16) & 0xff)
 		const dg = g - ((color >> 8) & 0xff)
 		const db = b - (color & 0xff)
@@ -67,8 +69,20 @@ export function getClosestApcColor(rgb: RgbColor): number {
 	return getClosestColor(apcColors, rgb)
 }
 
-const apcMiniColors = new Uint32Array([0x000000, -1, 0x00ff00, -1, -1, -1, 0xff0000, -1, -1, -1, 0xffff00])
-
+// SKIP's here are blinking states, and we don't really want to use blinking states
+const apcMiniColors = new Uint32Array([
+	0x000000,
+	SKIP,
+	0x00ff00,
+	SKIP,
+	SKIP,
+	SKIP,
+	0xff0000,
+	SKIP,
+	SKIP,
+	SKIP,
+	0xffff00,
+])
 export function getClosestApcMiniColor(rgb: RgbColor): number {
 	return getClosestColor(apcMiniColors, rgb)
 }
