@@ -20,10 +20,10 @@ export function createSurfaceSchema(
 		controls: {},
 	}
 
-	for (const button of layout.buttons) {
+	for (const buttonId in layout.buttons) {
 		// if (button.extendedModeOnly === true && !extendedMode) continue // skip these
-		const { row, column } = parseControlId(button.id)
-		surfaceLayout.controls[button.id] = {
+		const { row, column } = parseControlId(buttonId)
+		surfaceLayout.controls[buttonId] = {
 			row: row,
 			column: column,
 		}

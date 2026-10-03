@@ -11,7 +11,7 @@ import {
 	type ModuleLogger,
 } from '@companion-surface/base'
 import type { Input, Output } from '@julusian/midi/lazy'
-import type { MidiButtonDefinition, MidiLayoutDefinition } from './tmp-layout.js'
+import type { MidiButtonDefinitionWithId, MidiLayoutDefinition } from './tmp-layout.js'
 import { parseControlId } from './util.js'
 import { getInputs, getOutputs } from './midi-helper.js'
 
@@ -27,8 +27,8 @@ export class MidiWrapper implements SurfaceInstance {
 	readonly #context: SurfaceContext
 	readonly #layout: MidiLayoutDefinition
 
-	readonly #noteOnOffListeners: Map<number, MidiButtonDefinition> = new Map()
-	readonly #ccListeners: Map<number, MidiButtonDefinition> = new Map()
+	readonly #noteOnOffListeners: Map<number, MidiButtonDefinitionWithId> = new Map()
+	readonly #ccListeners: Map<number, MidiButtonDefinitionWithId> = new Map()
 	#extendedMode: boolean = false
 
 	/**
@@ -68,14 +68,14 @@ export class MidiWrapper implements SurfaceInstance {
 			this.#checkPortStatus()
 				.catch(() => {})
 				.finally(() => {})
-		}, 1e3)
+		}, 2e3)
 	}
 
 	async init(): Promise<void> {
 		this.#configureLayoutListeners()
 
 		this.#input.on('noteon', (note, velocity, info) => {
-			this.#logger.debug(`MIDI noteon received: note=${note} velocity=${velocity} info=${JSON.stringify(info)}`)
+			this.#logger.debug(`MIDI noteon received: channel=${info.channel} note=${note} velocity=${velocity}`)
 
 			const noteIdx = info.channel * 128 + note
 			const listener = this.#noteOnOffListeners.get(noteIdx)
@@ -102,7 +102,7 @@ export class MidiWrapper implements SurfaceInstance {
 		})
 
 		this.#input.on('noteoff', (note, velocity, info) => {
-			this.#logger.debug(`MIDI noteoff received: note=${note} velocity=${velocity} info=${JSON.stringify(info)}`)
+			this.#logger.debug(`MIDI noteoff received: channel=${info.channel} note=${note} velocity=${velocity}`)
 
 			const noteIdx = info.channel * 128 + note
 			const listener = this.#noteOnOffListeners.get(noteIdx)
@@ -119,7 +119,7 @@ export class MidiWrapper implements SurfaceInstance {
 		})
 
 		this.#input.on('cc', (param, value, info) => {
-			this.#logger.debug(`MIDI cc received: param=${param} value=${value} info=${JSON.stringify(info)}`)
+			this.#logger.debug(`MIDI cc received: channel=${info.channel} param=${param} value=${value}`)
 
 			const noteIdx = info.channel * 128 + param
 			const listener = this.#ccListeners.get(noteIdx)
@@ -162,8 +162,11 @@ export class MidiWrapper implements SurfaceInstance {
 		this.#ccListeners.clear()
 
 		// Future: could there be multiple listeners for one note?
-		for (const button of this.#layout.buttons) {
-			if (button.extendedModeOnly) console.log(button, this.#extendedMode)
+		const buttons = this.#layout.buttons
+		for (const buttonId in buttons) {
+			if (!buttons[buttonId]) continue // should never happen but just for typescript
+			const button: MidiButtonDefinitionWithId = { ...buttons[buttonId], id: buttonId }
+			if (button.note < 0) continue
 			if (button.extendedModeOnly && !this.#extendedMode) continue
 			const noteIdx = button.channel * 128 + button.note
 			switch (button.type) {
@@ -183,7 +186,11 @@ export class MidiWrapper implements SurfaceInstance {
 		}
 
 		// Extra buttons that are not really buttons, but just helpful tools
-		for (const button of this.#layout.extraButtons ?? []) {
+		const extraButtons = this.#layout.extraButtons
+		for (const buttonId in extraButtons) {
+			if (!extraButtons[buttonId]) continue // should never happen but just for typescript
+			const button: MidiButtonDefinitionWithId = { ...extraButtons[buttonId], id: buttonId }
+			if (button.note < 0) continue
 			if (button.extendedModeOnly && !this.#extendedMode) continue
 			const noteIdx = button.channel * 128 + button.note
 			switch (button.type) {
@@ -204,10 +211,12 @@ export class MidiWrapper implements SurfaceInstance {
 
 		// Extra inputs from the device, such as encoders, etc
 		for (const variable of this.#layout.transferVariables?.filter((variable) => variable.type === 'input') ?? []) {
+			if (variable.note < 0) continue
 			if (variable.extendedModeOnly && !this.#extendedMode) continue
-			const button: MidiButtonDefinition = {
+			const button: MidiButtonDefinitionWithId = {
 				...variable,
 				type: (variable.msg_type + '-encoder') as 'cc-encoder' | 'noteon-encoder',
+				id: variable.id,
 			}
 			const noteIdx = button.channel * 128 + button.note
 			switch (variable.msg_type) {
@@ -255,9 +264,9 @@ export class MidiWrapper implements SurfaceInstance {
 
 	async setBrightness(percent: number): Promise<void> {
 		this.#brightness = this.#layout.supportsBrightness ? percent : 100
-		for (const btn of this.#layout.buttons) {
-			const color = this.#lastColours[btn.id] ?? { r: 0, g: 0, b: 0 }
-			this.#writeKeyColour(btn.id, color)
+		for (const btnId in this.#layout.buttons) {
+			const color = this.#lastColours[btnId] ?? { r: 0, g: 0, b: 0 }
+			this.#writeKeyColour(btnId, color)
 		}
 	}
 
@@ -284,13 +293,13 @@ export class MidiWrapper implements SurfaceInstance {
 				}
 			}
 
-			// for debugging purposes
-			drawProps.image = new Uint8Array([
-				...drawProps.image.slice(0, 3),
-				...drawProps.image.slice(drawProps.image.length - 3, drawProps.image.length),
-			])
+			// // for debugging purposes
+			// drawProps.image = new Uint8Array([
+			// 	...drawProps.image.slice(0, 3),
+			// 	...drawProps.image.slice(drawProps.image.length - 3, drawProps.image.length),
+			// ])
 		}
-		this.#logger.debug(JSON.stringify(drawProps) + ' -> ' + JSON.stringify(color))
+		// this.#logger.debug(JSON.stringify(drawProps) + ' -> ' + JSON.stringify(color))
 		this.#lastColours[drawProps.controlId] = color
 
 		this.#writeKeyColour(drawProps.controlId, color)
@@ -300,7 +309,7 @@ export class MidiWrapper implements SurfaceInstance {
 		if (!this.#output.isPortOpen()) return
 
 		if (this.#layout.supportsBrightness) {
-			const scale = (this.#brightness || 100) / 100
+			const scale = Math.max(Math.min(this.#brightness, 100), 0) / 100
 			color = { r: color.r * scale, g: color.g * scale, b: color.b * scale }
 		}
 

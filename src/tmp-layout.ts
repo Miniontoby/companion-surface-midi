@@ -3,12 +3,14 @@ import type { MidiMessage, Output } from '@julusian/midi/lazy'
 import { getClosestApcColor, getClosestApcMiniColor, getClosestLpColor, parseControlId } from './util.js'
 
 export interface MidiButtonDefinition {
-	id: string
-
 	type: 'noteon' | 'cc' | 'cc-encoder' | 'noteon-encoder'
 	channel: number
 	note: number
 	extendedModeOnly?: true
+}
+
+export interface MidiButtonDefinitionWithId extends MidiButtonDefinition {
+	id: string
 }
 
 export interface MidiLayoutDefinition {
@@ -17,9 +19,12 @@ export interface MidiLayoutDefinition {
 	/** Do we have extraButtons that we can utilize for changePage actions? If so, label which button Can Change Page */
 	canChangePage?: { label: string } | undefined
 	/** All the buttons of the main grid */
-	buttons: MidiButtonDefinition[]
+	buttons: { [id: string]: MidiButtonDefinition | undefined }
 	/** Extra buttons that do not belong in the grid. For example dedicated page up/down buttons */
-	extraButtons?: (MidiButtonDefinition & { id: 'page/left' | 'page/right' })[]
+	extraButtons?: {
+		'page/left'?: MidiButtonDefinition
+		'page/right'?: MidiButtonDefinition
+	} & { [id: string]: MidiButtonDefinition }
 	/** Extra variables for input or output. For example encoders/sliders as inputs, or extra lights as outputs */
 	transferVariables?: Array<
 		| (SurfaceInputVariable & Omit<MidiButtonDefinition, 'type'> & { msg_type: 'noteon' | 'cc' })
@@ -48,106 +53,106 @@ const NovationLaunchpadMiniLayoutTest: MidiLayoutDefinition = {
 	// https://fael-downloads-prod.focusrite.com/customer/prod/s3fs-public/novation/downloads/10780/launchpad-s-and-mini-advanced-features-guide.pdf
 	// Not really helpful documentation tho.
 	supportsBrightness: true,
-	buttons: [
+	buttons: {
 		// Row 0 - cc 104-112
-		{ id: '0/0', type: 'cc', channel: 0, note: 104 },
-		{ id: '0/1', type: 'cc', channel: 0, note: 105 },
-		{ id: '0/2', type: 'cc', channel: 0, note: 106 },
-		{ id: '0/3', type: 'cc', channel: 0, note: 107 },
-		{ id: '0/4', type: 'cc', channel: 0, note: 108 },
-		{ id: '0/5', type: 'cc', channel: 0, note: 109 },
-		{ id: '0/6', type: 'cc', channel: 0, note: 110 },
-		{ id: '0/7', type: 'cc', channel: 0, note: 111 },
-		{ id: '0/8', type: 'cc', channel: 0, note: 112 },
+		'0/0': { type: 'cc', channel: 0, note: 104 },
+		'0/1': { type: 'cc', channel: 0, note: 105 },
+		'0/2': { type: 'cc', channel: 0, note: 106 },
+		'0/3': { type: 'cc', channel: 0, note: 107 },
+		'0/4': { type: 'cc', channel: 0, note: 108 },
+		'0/5': { type: 'cc', channel: 0, note: 109 },
+		'0/6': { type: 'cc', channel: 0, note: 110 },
+		'0/7': { type: 'cc', channel: 0, note: 111 },
+		'0/8': { type: 'cc', channel: 0, note: 112 },
 
 		// Row 1 - notes 0-8
-		{ id: '1/0', type: 'noteon', channel: 0, note: 0 },
-		{ id: '1/1', type: 'noteon', channel: 0, note: 1 },
-		{ id: '1/2', type: 'noteon', channel: 0, note: 2 },
-		{ id: '1/3', type: 'noteon', channel: 0, note: 3 },
-		{ id: '1/4', type: 'noteon', channel: 0, note: 4 },
-		{ id: '1/5', type: 'noteon', channel: 0, note: 5 },
-		{ id: '1/6', type: 'noteon', channel: 0, note: 6 },
-		{ id: '1/7', type: 'noteon', channel: 0, note: 7 },
-		{ id: '1/8', type: 'noteon', channel: 0, note: 8 },
+		'1/0': { type: 'noteon', channel: 0, note: 0 },
+		'1/1': { type: 'noteon', channel: 0, note: 1 },
+		'1/2': { type: 'noteon', channel: 0, note: 2 },
+		'1/3': { type: 'noteon', channel: 0, note: 3 },
+		'1/4': { type: 'noteon', channel: 0, note: 4 },
+		'1/5': { type: 'noteon', channel: 0, note: 5 },
+		'1/6': { type: 'noteon', channel: 0, note: 6 },
+		'1/7': { type: 'noteon', channel: 0, note: 7 },
+		'1/8': { type: 'noteon', channel: 0, note: 8 },
 
 		// Row 2 - notes 16-24
-		{ id: '2/0', type: 'noteon', channel: 0, note: 16 },
-		{ id: '2/1', type: 'noteon', channel: 0, note: 17 },
-		{ id: '2/2', type: 'noteon', channel: 0, note: 18 },
-		{ id: '2/3', type: 'noteon', channel: 0, note: 19 },
-		{ id: '2/4', type: 'noteon', channel: 0, note: 20 },
-		{ id: '2/5', type: 'noteon', channel: 0, note: 21 },
-		{ id: '2/6', type: 'noteon', channel: 0, note: 22 },
-		{ id: '2/7', type: 'noteon', channel: 0, note: 23 },
-		{ id: '2/8', type: 'noteon', channel: 0, note: 24 },
+		'2/0': { type: 'noteon', channel: 0, note: 16 },
+		'2/1': { type: 'noteon', channel: 0, note: 17 },
+		'2/2': { type: 'noteon', channel: 0, note: 18 },
+		'2/3': { type: 'noteon', channel: 0, note: 19 },
+		'2/4': { type: 'noteon', channel: 0, note: 20 },
+		'2/5': { type: 'noteon', channel: 0, note: 21 },
+		'2/6': { type: 'noteon', channel: 0, note: 22 },
+		'2/7': { type: 'noteon', channel: 0, note: 23 },
+		'2/8': { type: 'noteon', channel: 0, note: 24 },
 
 		// Row 3 - notes 32-40
-		{ id: '3/0', type: 'noteon', channel: 0, note: 32 },
-		{ id: '3/1', type: 'noteon', channel: 0, note: 33 },
-		{ id: '3/2', type: 'noteon', channel: 0, note: 34 },
-		{ id: '3/3', type: 'noteon', channel: 0, note: 35 },
-		{ id: '3/4', type: 'noteon', channel: 0, note: 36 },
-		{ id: '3/5', type: 'noteon', channel: 0, note: 37 },
-		{ id: '3/6', type: 'noteon', channel: 0, note: 38 },
-		{ id: '3/7', type: 'noteon', channel: 0, note: 39 },
-		{ id: '3/8', type: 'noteon', channel: 0, note: 40 },
+		'3/0': { type: 'noteon', channel: 0, note: 32 },
+		'3/1': { type: 'noteon', channel: 0, note: 33 },
+		'3/2': { type: 'noteon', channel: 0, note: 34 },
+		'3/3': { type: 'noteon', channel: 0, note: 35 },
+		'3/4': { type: 'noteon', channel: 0, note: 36 },
+		'3/5': { type: 'noteon', channel: 0, note: 37 },
+		'3/6': { type: 'noteon', channel: 0, note: 38 },
+		'3/7': { type: 'noteon', channel: 0, note: 39 },
+		'3/8': { type: 'noteon', channel: 0, note: 40 },
 
 		// Row 4 - notes 48-56
-		{ id: '4/0', type: 'noteon', channel: 0, note: 48 },
-		{ id: '4/1', type: 'noteon', channel: 0, note: 49 },
-		{ id: '4/2', type: 'noteon', channel: 0, note: 50 },
-		{ id: '4/3', type: 'noteon', channel: 0, note: 51 },
-		{ id: '4/4', type: 'noteon', channel: 0, note: 52 },
-		{ id: '4/5', type: 'noteon', channel: 0, note: 53 },
-		{ id: '4/6', type: 'noteon', channel: 0, note: 54 },
-		{ id: '4/7', type: 'noteon', channel: 0, note: 55 },
-		{ id: '4/8', type: 'noteon', channel: 0, note: 56 },
+		'4/0': { type: 'noteon', channel: 0, note: 48 },
+		'4/1': { type: 'noteon', channel: 0, note: 49 },
+		'4/2': { type: 'noteon', channel: 0, note: 50 },
+		'4/3': { type: 'noteon', channel: 0, note: 51 },
+		'4/4': { type: 'noteon', channel: 0, note: 52 },
+		'4/5': { type: 'noteon', channel: 0, note: 53 },
+		'4/6': { type: 'noteon', channel: 0, note: 54 },
+		'4/7': { type: 'noteon', channel: 0, note: 55 },
+		'4/8': { type: 'noteon', channel: 0, note: 56 },
 
 		// Row 5 - notes 64-72
-		{ id: '5/0', type: 'noteon', channel: 0, note: 64 },
-		{ id: '5/1', type: 'noteon', channel: 0, note: 65 },
-		{ id: '5/2', type: 'noteon', channel: 0, note: 66 },
-		{ id: '5/3', type: 'noteon', channel: 0, note: 67 },
-		{ id: '5/4', type: 'noteon', channel: 0, note: 68 },
-		{ id: '5/5', type: 'noteon', channel: 0, note: 69 },
-		{ id: '5/6', type: 'noteon', channel: 0, note: 70 },
-		{ id: '5/7', type: 'noteon', channel: 0, note: 71 },
-		{ id: '5/8', type: 'noteon', channel: 0, note: 72 },
+		'5/0': { type: 'noteon', channel: 0, note: 64 },
+		'5/1': { type: 'noteon', channel: 0, note: 65 },
+		'5/2': { type: 'noteon', channel: 0, note: 66 },
+		'5/3': { type: 'noteon', channel: 0, note: 67 },
+		'5/4': { type: 'noteon', channel: 0, note: 68 },
+		'5/5': { type: 'noteon', channel: 0, note: 69 },
+		'5/6': { type: 'noteon', channel: 0, note: 70 },
+		'5/7': { type: 'noteon', channel: 0, note: 71 },
+		'5/8': { type: 'noteon', channel: 0, note: 72 },
 
 		// Row 6 - notes 80-88
-		{ id: '6/0', type: 'noteon', channel: 0, note: 80 },
-		{ id: '6/1', type: 'noteon', channel: 0, note: 81 },
-		{ id: '6/2', type: 'noteon', channel: 0, note: 82 },
-		{ id: '6/3', type: 'noteon', channel: 0, note: 83 },
-		{ id: '6/4', type: 'noteon', channel: 0, note: 84 },
-		{ id: '6/5', type: 'noteon', channel: 0, note: 85 },
-		{ id: '6/6', type: 'noteon', channel: 0, note: 86 },
-		{ id: '6/7', type: 'noteon', channel: 0, note: 87 },
-		{ id: '6/8', type: 'noteon', channel: 0, note: 88 },
+		'6/0': { type: 'noteon', channel: 0, note: 80 },
+		'6/1': { type: 'noteon', channel: 0, note: 81 },
+		'6/2': { type: 'noteon', channel: 0, note: 82 },
+		'6/3': { type: 'noteon', channel: 0, note: 83 },
+		'6/4': { type: 'noteon', channel: 0, note: 84 },
+		'6/5': { type: 'noteon', channel: 0, note: 85 },
+		'6/6': { type: 'noteon', channel: 0, note: 86 },
+		'6/7': { type: 'noteon', channel: 0, note: 87 },
+		'6/8': { type: 'noteon', channel: 0, note: 88 },
 
 		// Row 7 - notes 96-104
-		{ id: '7/0', type: 'noteon', channel: 0, note: 96 },
-		{ id: '7/1', type: 'noteon', channel: 0, note: 97 },
-		{ id: '7/2', type: 'noteon', channel: 0, note: 98 },
-		{ id: '7/3', type: 'noteon', channel: 0, note: 99 },
-		{ id: '7/4', type: 'noteon', channel: 0, note: 100 },
-		{ id: '7/5', type: 'noteon', channel: 0, note: 101 },
-		{ id: '7/6', type: 'noteon', channel: 0, note: 102 },
-		{ id: '7/7', type: 'noteon', channel: 0, note: 103 },
-		{ id: '7/8', type: 'noteon', channel: 0, note: 104 },
+		'7/0': { type: 'noteon', channel: 0, note: 96 },
+		'7/1': { type: 'noteon', channel: 0, note: 97 },
+		'7/2': { type: 'noteon', channel: 0, note: 98 },
+		'7/3': { type: 'noteon', channel: 0, note: 99 },
+		'7/4': { type: 'noteon', channel: 0, note: 100 },
+		'7/5': { type: 'noteon', channel: 0, note: 101 },
+		'7/6': { type: 'noteon', channel: 0, note: 102 },
+		'7/7': { type: 'noteon', channel: 0, note: 103 },
+		'7/8': { type: 'noteon', channel: 0, note: 104 },
 
 		// Row 8 - notes 112-120
-		{ id: '8/0', type: 'noteon', channel: 0, note: 112 },
-		{ id: '8/1', type: 'noteon', channel: 0, note: 113 },
-		{ id: '8/2', type: 'noteon', channel: 0, note: 114 },
-		{ id: '8/3', type: 'noteon', channel: 0, note: 115 },
-		{ id: '8/4', type: 'noteon', channel: 0, note: 116 },
-		{ id: '8/5', type: 'noteon', channel: 0, note: 117 },
-		{ id: '8/6', type: 'noteon', channel: 0, note: 118 },
-		{ id: '8/7', type: 'noteon', channel: 0, note: 119 },
-		{ id: '8/8', type: 'noteon', channel: 0, note: 120 },
-	],
+		'8/0': { type: 'noteon', channel: 0, note: 112 },
+		'8/1': { type: 'noteon', channel: 0, note: 113 },
+		'8/2': { type: 'noteon', channel: 0, note: 114 },
+		'8/3': { type: 'noteon', channel: 0, note: 115 },
+		'8/4': { type: 'noteon', channel: 0, note: 116 },
+		'8/5': { type: 'noteon', channel: 0, note: 117 },
+		'8/6': { type: 'noteon', channel: 0, note: 118 },
+		'8/7': { type: 'noteon', channel: 0, note: 119 },
+		'8/8': { type: 'noteon', channel: 0, note: 120 },
+	},
 	command_clearPanel: function () {
 		return [[0x0b]]
 	},
@@ -168,127 +173,127 @@ const NovationLaunchpadMiniLayoutTest: MidiLayoutDefinition = {
 const NovationLaunchpadProLayout: MidiLayoutDefinition = {
 	// https://fael-downloads-prod.focusrite.com/customer/prod/s3fs-public/downloads/Launchpad%20Pro%20Programmers%20Reference%20Guide%201.01.pdf
 	supportsBrightness: true,
-	buttons: [
+	buttons: {
 		// Row 0 - cc 91-98
-		{ id: '0/0', type: 'cc', channel: 0, note: -1 },
-		{ id: '0/1', type: 'cc', channel: 0, note: 91 },
-		{ id: '0/2', type: 'cc', channel: 0, note: 92 },
-		{ id: '0/3', type: 'cc', channel: 0, note: 93 },
-		{ id: '0/4', type: 'cc', channel: 0, note: 94 },
-		{ id: '0/5', type: 'cc', channel: 0, note: 95 },
-		{ id: '0/6', type: 'cc', channel: 0, note: 96 },
-		{ id: '0/7', type: 'cc', channel: 0, note: 97 },
-		{ id: '0/8', type: 'cc', channel: 0, note: 98 },
-		{ id: '0/9', type: 'cc', channel: 0, note: -1 },
+		'0/0': { type: 'cc', channel: 0, note: -1 },
+		'0/1': { type: 'cc', channel: 0, note: 91 },
+		'0/2': { type: 'cc', channel: 0, note: 92 },
+		'0/3': { type: 'cc', channel: 0, note: 93 },
+		'0/4': { type: 'cc', channel: 0, note: 94 },
+		'0/5': { type: 'cc', channel: 0, note: 95 },
+		'0/6': { type: 'cc', channel: 0, note: 96 },
+		'0/7': { type: 'cc', channel: 0, note: 97 },
+		'0/8': { type: 'cc', channel: 0, note: 98 },
+		'0/9': { type: 'cc', channel: 0, note: -1 },
 
 		// Row 1 - notes 80-89
-		{ id: '1/0', type: 'cc', channel: 0, note: 80 },
-		{ id: '1/1', type: 'noteon', channel: 0, note: 81 },
-		{ id: '1/2', type: 'noteon', channel: 0, note: 82 },
-		{ id: '1/3', type: 'noteon', channel: 0, note: 83 },
-		{ id: '1/4', type: 'noteon', channel: 0, note: 84 },
-		{ id: '1/5', type: 'noteon', channel: 0, note: 85 },
-		{ id: '1/6', type: 'noteon', channel: 0, note: 86 },
-		{ id: '1/7', type: 'noteon', channel: 0, note: 87 },
-		{ id: '1/8', type: 'noteon', channel: 0, note: 88 },
-		{ id: '1/9', type: 'cc', channel: 0, note: 89 },
+		'1/0': { type: 'cc', channel: 0, note: 80 },
+		'1/1': { type: 'noteon', channel: 0, note: 81 },
+		'1/2': { type: 'noteon', channel: 0, note: 82 },
+		'1/3': { type: 'noteon', channel: 0, note: 83 },
+		'1/4': { type: 'noteon', channel: 0, note: 84 },
+		'1/5': { type: 'noteon', channel: 0, note: 85 },
+		'1/6': { type: 'noteon', channel: 0, note: 86 },
+		'1/7': { type: 'noteon', channel: 0, note: 87 },
+		'1/8': { type: 'noteon', channel: 0, note: 88 },
+		'1/9': { type: 'cc', channel: 0, note: 89 },
 
 		// Row 2 - notes 70-79
-		{ id: '2/0', type: 'cc', channel: 0, note: 70 },
-		{ id: '2/1', type: 'noteon', channel: 0, note: 71 },
-		{ id: '2/2', type: 'noteon', channel: 0, note: 72 },
-		{ id: '2/3', type: 'noteon', channel: 0, note: 73 },
-		{ id: '2/4', type: 'noteon', channel: 0, note: 74 },
-		{ id: '2/5', type: 'noteon', channel: 0, note: 75 },
-		{ id: '2/6', type: 'noteon', channel: 0, note: 76 },
-		{ id: '2/7', type: 'noteon', channel: 0, note: 77 },
-		{ id: '2/8', type: 'noteon', channel: 0, note: 78 },
-		{ id: '2/9', type: 'cc', channel: 0, note: 79 },
+		'2/0': { type: 'cc', channel: 0, note: 70 },
+		'2/1': { type: 'noteon', channel: 0, note: 71 },
+		'2/2': { type: 'noteon', channel: 0, note: 72 },
+		'2/3': { type: 'noteon', channel: 0, note: 73 },
+		'2/4': { type: 'noteon', channel: 0, note: 74 },
+		'2/5': { type: 'noteon', channel: 0, note: 75 },
+		'2/6': { type: 'noteon', channel: 0, note: 76 },
+		'2/7': { type: 'noteon', channel: 0, note: 77 },
+		'2/8': { type: 'noteon', channel: 0, note: 78 },
+		'2/9': { type: 'cc', channel: 0, note: 79 },
 
 		// Row 3 - notes 60-69
-		{ id: '3/0', type: 'cc', channel: 0, note: 60 },
-		{ id: '3/1', type: 'noteon', channel: 0, note: 61 },
-		{ id: '3/2', type: 'noteon', channel: 0, note: 62 },
-		{ id: '3/3', type: 'noteon', channel: 0, note: 63 },
-		{ id: '3/4', type: 'noteon', channel: 0, note: 64 },
-		{ id: '3/5', type: 'noteon', channel: 0, note: 65 },
-		{ id: '3/6', type: 'noteon', channel: 0, note: 66 },
-		{ id: '3/7', type: 'noteon', channel: 0, note: 67 },
-		{ id: '3/8', type: 'noteon', channel: 0, note: 68 },
-		{ id: '3/9', type: 'cc', channel: 0, note: 69 },
+		'3/0': { type: 'cc', channel: 0, note: 60 },
+		'3/1': { type: 'noteon', channel: 0, note: 61 },
+		'3/2': { type: 'noteon', channel: 0, note: 62 },
+		'3/3': { type: 'noteon', channel: 0, note: 63 },
+		'3/4': { type: 'noteon', channel: 0, note: 64 },
+		'3/5': { type: 'noteon', channel: 0, note: 65 },
+		'3/6': { type: 'noteon', channel: 0, note: 66 },
+		'3/7': { type: 'noteon', channel: 0, note: 67 },
+		'3/8': { type: 'noteon', channel: 0, note: 68 },
+		'3/9': { type: 'cc', channel: 0, note: 69 },
 
 		// Row 4 - notes 50-59
-		{ id: '4/0', type: 'cc', channel: 0, note: 50 },
-		{ id: '4/1', type: 'noteon', channel: 0, note: 51 },
-		{ id: '4/2', type: 'noteon', channel: 0, note: 52 },
-		{ id: '4/3', type: 'noteon', channel: 0, note: 53 },
-		{ id: '4/4', type: 'noteon', channel: 0, note: 54 },
-		{ id: '4/5', type: 'noteon', channel: 0, note: 55 },
-		{ id: '4/6', type: 'noteon', channel: 0, note: 56 },
-		{ id: '4/7', type: 'noteon', channel: 0, note: 57 },
-		{ id: '4/8', type: 'noteon', channel: 0, note: 58 },
-		{ id: '4/9', type: 'cc', channel: 0, note: 59 },
+		'4/0': { type: 'cc', channel: 0, note: 50 },
+		'4/1': { type: 'noteon', channel: 0, note: 51 },
+		'4/2': { type: 'noteon', channel: 0, note: 52 },
+		'4/3': { type: 'noteon', channel: 0, note: 53 },
+		'4/4': { type: 'noteon', channel: 0, note: 54 },
+		'4/5': { type: 'noteon', channel: 0, note: 55 },
+		'4/6': { type: 'noteon', channel: 0, note: 56 },
+		'4/7': { type: 'noteon', channel: 0, note: 57 },
+		'4/8': { type: 'noteon', channel: 0, note: 58 },
+		'4/9': { type: 'cc', channel: 0, note: 59 },
 
 		// Row 5 - notes 40-49
-		{ id: '5/0', type: 'cc', channel: 0, note: 40 },
-		{ id: '5/1', type: 'noteon', channel: 0, note: 41 },
-		{ id: '5/2', type: 'noteon', channel: 0, note: 42 },
-		{ id: '5/3', type: 'noteon', channel: 0, note: 43 },
-		{ id: '5/4', type: 'noteon', channel: 0, note: 44 },
-		{ id: '5/5', type: 'noteon', channel: 0, note: 45 },
-		{ id: '5/6', type: 'noteon', channel: 0, note: 46 },
-		{ id: '5/7', type: 'noteon', channel: 0, note: 47 },
-		{ id: '5/8', type: 'noteon', channel: 0, note: 48 },
-		{ id: '5/9', type: 'cc', channel: 0, note: 49 },
+		'5/0': { type: 'cc', channel: 0, note: 40 },
+		'5/1': { type: 'noteon', channel: 0, note: 41 },
+		'5/2': { type: 'noteon', channel: 0, note: 42 },
+		'5/3': { type: 'noteon', channel: 0, note: 43 },
+		'5/4': { type: 'noteon', channel: 0, note: 44 },
+		'5/5': { type: 'noteon', channel: 0, note: 45 },
+		'5/6': { type: 'noteon', channel: 0, note: 46 },
+		'5/7': { type: 'noteon', channel: 0, note: 47 },
+		'5/8': { type: 'noteon', channel: 0, note: 48 },
+		'5/9': { type: 'cc', channel: 0, note: 49 },
 
 		// Row 6 - notes 30-39
-		{ id: '6/0', type: 'cc', channel: 0, note: 30 },
-		{ id: '6/1', type: 'noteon', channel: 0, note: 31 },
-		{ id: '6/2', type: 'noteon', channel: 0, note: 32 },
-		{ id: '6/3', type: 'noteon', channel: 0, note: 33 },
-		{ id: '6/4', type: 'noteon', channel: 0, note: 34 },
-		{ id: '6/5', type: 'noteon', channel: 0, note: 35 },
-		{ id: '6/6', type: 'noteon', channel: 0, note: 36 },
-		{ id: '6/7', type: 'noteon', channel: 0, note: 37 },
-		{ id: '6/8', type: 'noteon', channel: 0, note: 38 },
-		{ id: '6/9', type: 'cc', channel: 0, note: 39 },
+		'6/0': { type: 'cc', channel: 0, note: 30 },
+		'6/1': { type: 'noteon', channel: 0, note: 31 },
+		'6/2': { type: 'noteon', channel: 0, note: 32 },
+		'6/3': { type: 'noteon', channel: 0, note: 33 },
+		'6/4': { type: 'noteon', channel: 0, note: 34 },
+		'6/5': { type: 'noteon', channel: 0, note: 35 },
+		'6/6': { type: 'noteon', channel: 0, note: 36 },
+		'6/7': { type: 'noteon', channel: 0, note: 37 },
+		'6/8': { type: 'noteon', channel: 0, note: 38 },
+		'6/9': { type: 'cc', channel: 0, note: 39 },
 
 		// Row 7 - notes 20-29
-		{ id: '7/0', type: 'cc', channel: 0, note: 20 },
-		{ id: '7/1', type: 'noteon', channel: 0, note: 21 },
-		{ id: '7/2', type: 'noteon', channel: 0, note: 22 },
-		{ id: '7/3', type: 'noteon', channel: 0, note: 23 },
-		{ id: '7/4', type: 'noteon', channel: 0, note: 24 },
-		{ id: '7/5', type: 'noteon', channel: 0, note: 25 },
-		{ id: '7/6', type: 'noteon', channel: 0, note: 26 },
-		{ id: '7/7', type: 'noteon', channel: 0, note: 27 },
-		{ id: '7/8', type: 'noteon', channel: 0, note: 28 },
-		{ id: '7/9', type: 'cc', channel: 0, note: 29 },
+		'7/0': { type: 'cc', channel: 0, note: 20 },
+		'7/1': { type: 'noteon', channel: 0, note: 21 },
+		'7/2': { type: 'noteon', channel: 0, note: 22 },
+		'7/3': { type: 'noteon', channel: 0, note: 23 },
+		'7/4': { type: 'noteon', channel: 0, note: 24 },
+		'7/5': { type: 'noteon', channel: 0, note: 25 },
+		'7/6': { type: 'noteon', channel: 0, note: 26 },
+		'7/7': { type: 'noteon', channel: 0, note: 27 },
+		'7/8': { type: 'noteon', channel: 0, note: 28 },
+		'7/9': { type: 'cc', channel: 0, note: 29 },
 
 		// Row 8 - notes 10-19
-		{ id: '8/0', type: 'cc', channel: 0, note: 10 },
-		{ id: '8/1', type: 'noteon', channel: 0, note: 11 },
-		{ id: '8/2', type: 'noteon', channel: 0, note: 12 },
-		{ id: '8/3', type: 'noteon', channel: 0, note: 13 },
-		{ id: '8/4', type: 'noteon', channel: 0, note: 14 },
-		{ id: '8/5', type: 'noteon', channel: 0, note: 15 },
-		{ id: '8/6', type: 'noteon', channel: 0, note: 16 },
-		{ id: '8/7', type: 'noteon', channel: 0, note: 17 },
-		{ id: '8/8', type: 'noteon', channel: 0, note: 18 },
-		{ id: '8/9', type: 'cc', channel: 0, note: 19 },
+		'8/0': { type: 'cc', channel: 0, note: 10 },
+		'8/1': { type: 'noteon', channel: 0, note: 11 },
+		'8/2': { type: 'noteon', channel: 0, note: 12 },
+		'8/3': { type: 'noteon', channel: 0, note: 13 },
+		'8/4': { type: 'noteon', channel: 0, note: 14 },
+		'8/5': { type: 'noteon', channel: 0, note: 15 },
+		'8/6': { type: 'noteon', channel: 0, note: 16 },
+		'8/7': { type: 'noteon', channel: 0, note: 17 },
+		'8/8': { type: 'noteon', channel: 0, note: 18 },
+		'8/9': { type: 'cc', channel: 0, note: 19 },
 
 		// Row 9 - notes 1-8
-		{ id: '9/0', type: 'cc', channel: 0, note: -1 },
-		{ id: '9/1', type: 'cc', channel: 0, note: 1 },
-		{ id: '9/2', type: 'cc', channel: 0, note: 2 },
-		{ id: '9/3', type: 'cc', channel: 0, note: 3 },
-		{ id: '9/4', type: 'cc', channel: 0, note: 4 },
-		{ id: '9/5', type: 'cc', channel: 0, note: 5 },
-		{ id: '9/6', type: 'cc', channel: 0, note: 6 },
-		{ id: '9/7', type: 'cc', channel: 0, note: 7 },
-		{ id: '9/8', type: 'cc', channel: 0, note: 8 },
-		{ id: '9/9', type: 'cc', channel: 0, note: -1 },
-	],
+		'9/0': { type: 'cc', channel: 0, note: -1 },
+		'9/1': { type: 'cc', channel: 0, note: 1 },
+		'9/2': { type: 'cc', channel: 0, note: 2 },
+		'9/3': { type: 'cc', channel: 0, note: 3 },
+		'9/4': { type: 'cc', channel: 0, note: 4 },
+		'9/5': { type: 'cc', channel: 0, note: 5 },
+		'9/6': { type: 'cc', channel: 0, note: 6 },
+		'9/7': { type: 'cc', channel: 0, note: 7 },
+		'9/8': { type: 'cc', channel: 0, note: 8 },
+		'9/9': { type: 'cc', channel: 0, note: -1 },
+	},
 	command_clearPanel: function () {
 		// Turn on programmer mode
 		return [[0xf0, 0x00, 0x20, 0x29, 0x02, 0x0c, 0x0e, 0x01, 0xf7]]
@@ -298,7 +303,7 @@ const NovationLaunchpadProLayout: MidiLayoutDefinition = {
 		return [[0xf0, 0x00, 0x20, 0x29, 0x02, 0x0c, 0x0e, 0x00, 0xf7]]
 	},
 	command_writeKeyColour: function (controlId, color) {
-		const button = this.buttons.find((btn) => btn.id === controlId)
+		const button = this.buttons[controlId]
 		if (!button || button.note === -1) return []
 		return [
 			0xf0,
@@ -325,108 +330,108 @@ const NovationLaunchpadMK2Layout: MidiLayoutDefinition = {
 	// https://fael-downloads-prod.focusrite.com/customer/prod/s3fs-public/downloads/Launchpad%20MK2%20Programmers%20Reference%20Manual%20v1.03.pdf
 	// or even https://fael-downloads-prod.focusrite.com/customer/prod/s3fs-public/novation/downloads/10535/prg-max-files-v1.zip
 	...NovationLaunchpadProLayout,
-	buttons: [
+	buttons: {
 		// Row 0 - cc 91-99
-		{ id: '0/0', type: 'cc', channel: 0, note: 104 },
-		{ id: '0/1', type: 'cc', channel: 0, note: 105 },
-		{ id: '0/2', type: 'cc', channel: 0, note: 106 },
-		{ id: '0/3', type: 'cc', channel: 0, note: 107 },
-		{ id: '0/4', type: 'cc', channel: 0, note: 108 },
-		{ id: '0/5', type: 'cc', channel: 0, note: 109 },
-		{ id: '0/6', type: 'cc', channel: 0, note: 110 },
-		{ id: '0/7', type: 'cc', channel: 0, note: 111 },
-		{ id: '0/8', type: 'cc', channel: 0, note: -1 }, // Placeholder. This one doesn't actually exist
+		'0/0': { type: 'cc', channel: 0, note: 104 },
+		'0/1': { type: 'cc', channel: 0, note: 105 },
+		'0/2': { type: 'cc', channel: 0, note: 106 },
+		'0/3': { type: 'cc', channel: 0, note: 107 },
+		'0/4': { type: 'cc', channel: 0, note: 108 },
+		'0/5': { type: 'cc', channel: 0, note: 109 },
+		'0/6': { type: 'cc', channel: 0, note: 110 },
+		'0/7': { type: 'cc', channel: 0, note: 111 },
+		'0/8': { type: 'cc', channel: 0, note: -1 }, // Placeholder. This one doesn't actually exist
 
 		// Row 1 - notes 81-89
-		{ id: '1/0', type: 'noteon', channel: 0, note: 81 },
-		{ id: '1/1', type: 'noteon', channel: 0, note: 82 },
-		{ id: '1/2', type: 'noteon', channel: 0, note: 83 },
-		{ id: '1/3', type: 'noteon', channel: 0, note: 84 },
-		{ id: '1/4', type: 'noteon', channel: 0, note: 85 },
-		{ id: '1/5', type: 'noteon', channel: 0, note: 86 },
-		{ id: '1/6', type: 'noteon', channel: 0, note: 87 },
-		{ id: '1/7', type: 'noteon', channel: 0, note: 88 },
-		{ id: '1/8', type: 'noteon', channel: 0, note: 89 },
+		'1/0': { type: 'noteon', channel: 0, note: 81 },
+		'1/1': { type: 'noteon', channel: 0, note: 82 },
+		'1/2': { type: 'noteon', channel: 0, note: 83 },
+		'1/3': { type: 'noteon', channel: 0, note: 84 },
+		'1/4': { type: 'noteon', channel: 0, note: 85 },
+		'1/5': { type: 'noteon', channel: 0, note: 86 },
+		'1/6': { type: 'noteon', channel: 0, note: 87 },
+		'1/7': { type: 'noteon', channel: 0, note: 88 },
+		'1/8': { type: 'noteon', channel: 0, note: 89 },
 
 		// Row 2 - notes 71-79
-		{ id: '2/0', type: 'noteon', channel: 0, note: 71 },
-		{ id: '2/1', type: 'noteon', channel: 0, note: 72 },
-		{ id: '2/2', type: 'noteon', channel: 0, note: 73 },
-		{ id: '2/3', type: 'noteon', channel: 0, note: 74 },
-		{ id: '2/4', type: 'noteon', channel: 0, note: 75 },
-		{ id: '2/5', type: 'noteon', channel: 0, note: 76 },
-		{ id: '2/6', type: 'noteon', channel: 0, note: 77 },
-		{ id: '2/7', type: 'noteon', channel: 0, note: 78 },
-		{ id: '2/8', type: 'noteon', channel: 0, note: 79 },
+		'2/0': { type: 'noteon', channel: 0, note: 71 },
+		'2/1': { type: 'noteon', channel: 0, note: 72 },
+		'2/2': { type: 'noteon', channel: 0, note: 73 },
+		'2/3': { type: 'noteon', channel: 0, note: 74 },
+		'2/4': { type: 'noteon', channel: 0, note: 75 },
+		'2/5': { type: 'noteon', channel: 0, note: 76 },
+		'2/6': { type: 'noteon', channel: 0, note: 77 },
+		'2/7': { type: 'noteon', channel: 0, note: 78 },
+		'2/8': { type: 'noteon', channel: 0, note: 79 },
 
 		// Row 3 - notes 61-69
-		{ id: '3/0', type: 'noteon', channel: 0, note: 61 },
-		{ id: '3/1', type: 'noteon', channel: 0, note: 62 },
-		{ id: '3/2', type: 'noteon', channel: 0, note: 63 },
-		{ id: '3/3', type: 'noteon', channel: 0, note: 64 },
-		{ id: '3/4', type: 'noteon', channel: 0, note: 65 },
-		{ id: '3/5', type: 'noteon', channel: 0, note: 66 },
-		{ id: '3/6', type: 'noteon', channel: 0, note: 67 },
-		{ id: '3/7', type: 'noteon', channel: 0, note: 68 },
-		{ id: '3/8', type: 'noteon', channel: 0, note: 69 },
+		'3/0': { type: 'noteon', channel: 0, note: 61 },
+		'3/1': { type: 'noteon', channel: 0, note: 62 },
+		'3/2': { type: 'noteon', channel: 0, note: 63 },
+		'3/3': { type: 'noteon', channel: 0, note: 64 },
+		'3/4': { type: 'noteon', channel: 0, note: 65 },
+		'3/5': { type: 'noteon', channel: 0, note: 66 },
+		'3/6': { type: 'noteon', channel: 0, note: 67 },
+		'3/7': { type: 'noteon', channel: 0, note: 68 },
+		'3/8': { type: 'noteon', channel: 0, note: 69 },
 
 		// Row 4 - notes 51-59
-		{ id: '4/0', type: 'noteon', channel: 0, note: 51 },
-		{ id: '4/1', type: 'noteon', channel: 0, note: 52 },
-		{ id: '4/2', type: 'noteon', channel: 0, note: 53 },
-		{ id: '4/3', type: 'noteon', channel: 0, note: 54 },
-		{ id: '4/4', type: 'noteon', channel: 0, note: 55 },
-		{ id: '4/5', type: 'noteon', channel: 0, note: 56 },
-		{ id: '4/6', type: 'noteon', channel: 0, note: 57 },
-		{ id: '4/7', type: 'noteon', channel: 0, note: 58 },
-		{ id: '4/8', type: 'noteon', channel: 0, note: 59 },
+		'4/0': { type: 'noteon', channel: 0, note: 51 },
+		'4/1': { type: 'noteon', channel: 0, note: 52 },
+		'4/2': { type: 'noteon', channel: 0, note: 53 },
+		'4/3': { type: 'noteon', channel: 0, note: 54 },
+		'4/4': { type: 'noteon', channel: 0, note: 55 },
+		'4/5': { type: 'noteon', channel: 0, note: 56 },
+		'4/6': { type: 'noteon', channel: 0, note: 57 },
+		'4/7': { type: 'noteon', channel: 0, note: 58 },
+		'4/8': { type: 'noteon', channel: 0, note: 59 },
 
 		// Row 5 - notes 41-49
-		{ id: '5/0', type: 'noteon', channel: 0, note: 41 },
-		{ id: '5/1', type: 'noteon', channel: 0, note: 42 },
-		{ id: '5/2', type: 'noteon', channel: 0, note: 43 },
-		{ id: '5/3', type: 'noteon', channel: 0, note: 44 },
-		{ id: '5/4', type: 'noteon', channel: 0, note: 45 },
-		{ id: '5/5', type: 'noteon', channel: 0, note: 46 },
-		{ id: '5/6', type: 'noteon', channel: 0, note: 47 },
-		{ id: '5/7', type: 'noteon', channel: 0, note: 48 },
-		{ id: '5/8', type: 'noteon', channel: 0, note: 49 },
+		'5/0': { type: 'noteon', channel: 0, note: 41 },
+		'5/1': { type: 'noteon', channel: 0, note: 42 },
+		'5/2': { type: 'noteon', channel: 0, note: 43 },
+		'5/3': { type: 'noteon', channel: 0, note: 44 },
+		'5/4': { type: 'noteon', channel: 0, note: 45 },
+		'5/5': { type: 'noteon', channel: 0, note: 46 },
+		'5/6': { type: 'noteon', channel: 0, note: 47 },
+		'5/7': { type: 'noteon', channel: 0, note: 48 },
+		'5/8': { type: 'noteon', channel: 0, note: 49 },
 
 		// Row 6 - notes 31-39
-		{ id: '6/0', type: 'noteon', channel: 0, note: 31 },
-		{ id: '6/1', type: 'noteon', channel: 0, note: 32 },
-		{ id: '6/2', type: 'noteon', channel: 0, note: 33 },
-		{ id: '6/3', type: 'noteon', channel: 0, note: 34 },
-		{ id: '6/4', type: 'noteon', channel: 0, note: 35 },
-		{ id: '6/5', type: 'noteon', channel: 0, note: 36 },
-		{ id: '6/6', type: 'noteon', channel: 0, note: 37 },
-		{ id: '6/7', type: 'noteon', channel: 0, note: 38 },
-		{ id: '6/8', type: 'noteon', channel: 0, note: 39 },
+		'6/0': { type: 'noteon', channel: 0, note: 31 },
+		'6/1': { type: 'noteon', channel: 0, note: 32 },
+		'6/2': { type: 'noteon', channel: 0, note: 33 },
+		'6/3': { type: 'noteon', channel: 0, note: 34 },
+		'6/4': { type: 'noteon', channel: 0, note: 35 },
+		'6/5': { type: 'noteon', channel: 0, note: 36 },
+		'6/6': { type: 'noteon', channel: 0, note: 37 },
+		'6/7': { type: 'noteon', channel: 0, note: 38 },
+		'6/8': { type: 'noteon', channel: 0, note: 39 },
 
 		// Row 7 - notes 21-29
-		{ id: '7/0', type: 'noteon', channel: 0, note: 21 },
-		{ id: '7/1', type: 'noteon', channel: 0, note: 22 },
-		{ id: '7/2', type: 'noteon', channel: 0, note: 23 },
-		{ id: '7/3', type: 'noteon', channel: 0, note: 24 },
-		{ id: '7/4', type: 'noteon', channel: 0, note: 25 },
-		{ id: '7/5', type: 'noteon', channel: 0, note: 26 },
-		{ id: '7/6', type: 'noteon', channel: 0, note: 27 },
-		{ id: '7/7', type: 'noteon', channel: 0, note: 28 },
-		{ id: '7/8', type: 'noteon', channel: 0, note: 29 },
+		'7/0': { type: 'noteon', channel: 0, note: 21 },
+		'7/1': { type: 'noteon', channel: 0, note: 22 },
+		'7/2': { type: 'noteon', channel: 0, note: 23 },
+		'7/3': { type: 'noteon', channel: 0, note: 24 },
+		'7/4': { type: 'noteon', channel: 0, note: 25 },
+		'7/5': { type: 'noteon', channel: 0, note: 26 },
+		'7/6': { type: 'noteon', channel: 0, note: 27 },
+		'7/7': { type: 'noteon', channel: 0, note: 28 },
+		'7/8': { type: 'noteon', channel: 0, note: 29 },
 
 		// Row 8 - notes 11-19
-		{ id: '8/0', type: 'noteon', channel: 0, note: 11 },
-		{ id: '8/1', type: 'noteon', channel: 0, note: 12 },
-		{ id: '8/2', type: 'noteon', channel: 0, note: 13 },
-		{ id: '8/3', type: 'noteon', channel: 0, note: 14 },
-		{ id: '8/4', type: 'noteon', channel: 0, note: 15 },
-		{ id: '8/5', type: 'noteon', channel: 0, note: 16 },
-		{ id: '8/6', type: 'noteon', channel: 0, note: 17 },
-		{ id: '8/7', type: 'noteon', channel: 0, note: 18 },
-		{ id: '8/8', type: 'noteon', channel: 0, note: 19 },
-	],
+		'8/0': { type: 'noteon', channel: 0, note: 11 },
+		'8/1': { type: 'noteon', channel: 0, note: 12 },
+		'8/2': { type: 'noteon', channel: 0, note: 13 },
+		'8/3': { type: 'noteon', channel: 0, note: 14 },
+		'8/4': { type: 'noteon', channel: 0, note: 15 },
+		'8/5': { type: 'noteon', channel: 0, note: 16 },
+		'8/6': { type: 'noteon', channel: 0, note: 17 },
+		'8/7': { type: 'noteon', channel: 0, note: 18 },
+		'8/8': { type: 'noteon', channel: 0, note: 19 },
+	},
 	command_writeKeyColour: function (controlId, color) {
-		const button = this.buttons.find((btn) => btn.id === controlId)
+		const button = this.buttons[controlId]
 		if (!button || button.note === -1) return []
 		return [
 			0xf0,
@@ -453,108 +458,108 @@ const NovationLaunchpadMK2Layout: MidiLayoutDefinition = {
 const NovationLaunchpadXMK3Layout: MidiLayoutDefinition = {
 	// https://fael-downloads-prod.focusrite.com/customer/prod/s3fs-public/downloads/Launchpad%20X%20-%20Programmers%20Reference%20Manual.pdf
 	...NovationLaunchpadProLayout, // Same clearPanel and shutdown functions!
-	buttons: [
+	buttons: {
 		// Row 0 - cc 91-99
-		{ id: '0/0', type: 'cc', channel: 0, note: 91 },
-		{ id: '0/1', type: 'cc', channel: 0, note: 92 },
-		{ id: '0/2', type: 'cc', channel: 0, note: 93 },
-		{ id: '0/3', type: 'cc', channel: 0, note: 94 },
-		{ id: '0/4', type: 'cc', channel: 0, note: 95 },
-		{ id: '0/5', type: 'cc', channel: 0, note: 96 },
-		{ id: '0/6', type: 'cc', channel: 0, note: 97 },
-		{ id: '0/7', type: 'cc', channel: 0, note: 98 },
-		{ id: '0/8', type: 'cc', channel: 0, note: 99 },
+		'0/0': { type: 'cc', channel: 0, note: 91 },
+		'0/1': { type: 'cc', channel: 0, note: 92 },
+		'0/2': { type: 'cc', channel: 0, note: 93 },
+		'0/3': { type: 'cc', channel: 0, note: 94 },
+		'0/4': { type: 'cc', channel: 0, note: 95 },
+		'0/5': { type: 'cc', channel: 0, note: 96 },
+		'0/6': { type: 'cc', channel: 0, note: 97 },
+		'0/7': { type: 'cc', channel: 0, note: 98 },
+		'0/8': { type: 'cc', channel: 0, note: 99 },
 
 		// Row 1 - notes 81-89
-		{ id: '1/0', type: 'noteon', channel: 0, note: 81 },
-		{ id: '1/1', type: 'noteon', channel: 0, note: 82 },
-		{ id: '1/2', type: 'noteon', channel: 0, note: 83 },
-		{ id: '1/3', type: 'noteon', channel: 0, note: 84 },
-		{ id: '1/4', type: 'noteon', channel: 0, note: 85 },
-		{ id: '1/5', type: 'noteon', channel: 0, note: 86 },
-		{ id: '1/6', type: 'noteon', channel: 0, note: 87 },
-		{ id: '1/7', type: 'noteon', channel: 0, note: 88 },
-		{ id: '1/8', type: 'cc', channel: 0, note: 89 },
+		'1/0': { type: 'noteon', channel: 0, note: 81 },
+		'1/1': { type: 'noteon', channel: 0, note: 82 },
+		'1/2': { type: 'noteon', channel: 0, note: 83 },
+		'1/3': { type: 'noteon', channel: 0, note: 84 },
+		'1/4': { type: 'noteon', channel: 0, note: 85 },
+		'1/5': { type: 'noteon', channel: 0, note: 86 },
+		'1/6': { type: 'noteon', channel: 0, note: 87 },
+		'1/7': { type: 'noteon', channel: 0, note: 88 },
+		'1/8': { type: 'cc', channel: 0, note: 89 },
 
 		// Row 2 - notes 16-24
-		{ id: '2/0', type: 'noteon', channel: 0, note: 71 },
-		{ id: '2/1', type: 'noteon', channel: 0, note: 72 },
-		{ id: '2/2', type: 'noteon', channel: 0, note: 73 },
-		{ id: '2/3', type: 'noteon', channel: 0, note: 74 },
-		{ id: '2/4', type: 'noteon', channel: 0, note: 75 },
-		{ id: '2/5', type: 'noteon', channel: 0, note: 76 },
-		{ id: '2/6', type: 'noteon', channel: 0, note: 77 },
-		{ id: '2/7', type: 'noteon', channel: 0, note: 78 },
-		{ id: '2/8', type: 'cc', channel: 0, note: 79 },
+		'2/0': { type: 'noteon', channel: 0, note: 71 },
+		'2/1': { type: 'noteon', channel: 0, note: 72 },
+		'2/2': { type: 'noteon', channel: 0, note: 73 },
+		'2/3': { type: 'noteon', channel: 0, note: 74 },
+		'2/4': { type: 'noteon', channel: 0, note: 75 },
+		'2/5': { type: 'noteon', channel: 0, note: 76 },
+		'2/6': { type: 'noteon', channel: 0, note: 77 },
+		'2/7': { type: 'noteon', channel: 0, note: 78 },
+		'2/8': { type: 'cc', channel: 0, note: 79 },
 
 		// Row 3 - notes 32-40
-		{ id: '3/0', type: 'noteon', channel: 0, note: 61 },
-		{ id: '3/1', type: 'noteon', channel: 0, note: 62 },
-		{ id: '3/2', type: 'noteon', channel: 0, note: 63 },
-		{ id: '3/3', type: 'noteon', channel: 0, note: 64 },
-		{ id: '3/4', type: 'noteon', channel: 0, note: 65 },
-		{ id: '3/5', type: 'noteon', channel: 0, note: 66 },
-		{ id: '3/6', type: 'noteon', channel: 0, note: 67 },
-		{ id: '3/7', type: 'noteon', channel: 0, note: 68 },
-		{ id: '3/8', type: 'cc', channel: 0, note: 69 },
+		'3/0': { type: 'noteon', channel: 0, note: 61 },
+		'3/1': { type: 'noteon', channel: 0, note: 62 },
+		'3/2': { type: 'noteon', channel: 0, note: 63 },
+		'3/3': { type: 'noteon', channel: 0, note: 64 },
+		'3/4': { type: 'noteon', channel: 0, note: 65 },
+		'3/5': { type: 'noteon', channel: 0, note: 66 },
+		'3/6': { type: 'noteon', channel: 0, note: 67 },
+		'3/7': { type: 'noteon', channel: 0, note: 68 },
+		'3/8': { type: 'cc', channel: 0, note: 69 },
 
 		// Row 4 - notes 48-56
-		{ id: '4/0', type: 'noteon', channel: 0, note: 51 },
-		{ id: '4/1', type: 'noteon', channel: 0, note: 52 },
-		{ id: '4/2', type: 'noteon', channel: 0, note: 53 },
-		{ id: '4/3', type: 'noteon', channel: 0, note: 54 },
-		{ id: '4/4', type: 'noteon', channel: 0, note: 55 },
-		{ id: '4/5', type: 'noteon', channel: 0, note: 56 },
-		{ id: '4/6', type: 'noteon', channel: 0, note: 57 },
-		{ id: '4/7', type: 'noteon', channel: 0, note: 58 },
-		{ id: '4/8', type: 'cc', channel: 0, note: 59 },
+		'4/0': { type: 'noteon', channel: 0, note: 51 },
+		'4/1': { type: 'noteon', channel: 0, note: 52 },
+		'4/2': { type: 'noteon', channel: 0, note: 53 },
+		'4/3': { type: 'noteon', channel: 0, note: 54 },
+		'4/4': { type: 'noteon', channel: 0, note: 55 },
+		'4/5': { type: 'noteon', channel: 0, note: 56 },
+		'4/6': { type: 'noteon', channel: 0, note: 57 },
+		'4/7': { type: 'noteon', channel: 0, note: 58 },
+		'4/8': { type: 'cc', channel: 0, note: 59 },
 
 		// Row 5 - notes 64-72
-		{ id: '5/0', type: 'noteon', channel: 0, note: 41 },
-		{ id: '5/1', type: 'noteon', channel: 0, note: 42 },
-		{ id: '5/2', type: 'noteon', channel: 0, note: 43 },
-		{ id: '5/3', type: 'noteon', channel: 0, note: 44 },
-		{ id: '5/4', type: 'noteon', channel: 0, note: 45 },
-		{ id: '5/5', type: 'noteon', channel: 0, note: 46 },
-		{ id: '5/6', type: 'noteon', channel: 0, note: 47 },
-		{ id: '5/7', type: 'noteon', channel: 0, note: 48 },
-		{ id: '5/8', type: 'cc', channel: 0, note: 49 },
+		'5/0': { type: 'noteon', channel: 0, note: 41 },
+		'5/1': { type: 'noteon', channel: 0, note: 42 },
+		'5/2': { type: 'noteon', channel: 0, note: 43 },
+		'5/3': { type: 'noteon', channel: 0, note: 44 },
+		'5/4': { type: 'noteon', channel: 0, note: 45 },
+		'5/5': { type: 'noteon', channel: 0, note: 46 },
+		'5/6': { type: 'noteon', channel: 0, note: 47 },
+		'5/7': { type: 'noteon', channel: 0, note: 48 },
+		'5/8': { type: 'cc', channel: 0, note: 49 },
 
 		// Row 6 - notes 80-88
-		{ id: '6/0', type: 'noteon', channel: 0, note: 31 },
-		{ id: '6/1', type: 'noteon', channel: 0, note: 32 },
-		{ id: '6/2', type: 'noteon', channel: 0, note: 33 },
-		{ id: '6/3', type: 'noteon', channel: 0, note: 34 },
-		{ id: '6/4', type: 'noteon', channel: 0, note: 35 },
-		{ id: '6/5', type: 'noteon', channel: 0, note: 36 },
-		{ id: '6/6', type: 'noteon', channel: 0, note: 37 },
-		{ id: '6/7', type: 'noteon', channel: 0, note: 38 },
-		{ id: '6/8', type: 'cc', channel: 0, note: 39 },
+		'6/0': { type: 'noteon', channel: 0, note: 31 },
+		'6/1': { type: 'noteon', channel: 0, note: 32 },
+		'6/2': { type: 'noteon', channel: 0, note: 33 },
+		'6/3': { type: 'noteon', channel: 0, note: 34 },
+		'6/4': { type: 'noteon', channel: 0, note: 35 },
+		'6/5': { type: 'noteon', channel: 0, note: 36 },
+		'6/6': { type: 'noteon', channel: 0, note: 37 },
+		'6/7': { type: 'noteon', channel: 0, note: 38 },
+		'6/8': { type: 'cc', channel: 0, note: 39 },
 
 		// Row 7 - notes 96-104
-		{ id: '7/0', type: 'noteon', channel: 0, note: 21 },
-		{ id: '7/1', type: 'noteon', channel: 0, note: 22 },
-		{ id: '7/2', type: 'noteon', channel: 0, note: 23 },
-		{ id: '7/3', type: 'noteon', channel: 0, note: 24 },
-		{ id: '7/4', type: 'noteon', channel: 0, note: 25 },
-		{ id: '7/5', type: 'noteon', channel: 0, note: 26 },
-		{ id: '7/6', type: 'noteon', channel: 0, note: 27 },
-		{ id: '7/7', type: 'noteon', channel: 0, note: 28 },
-		{ id: '7/8', type: 'cc', channel: 0, note: 29 },
+		'7/0': { type: 'noteon', channel: 0, note: 21 },
+		'7/1': { type: 'noteon', channel: 0, note: 22 },
+		'7/2': { type: 'noteon', channel: 0, note: 23 },
+		'7/3': { type: 'noteon', channel: 0, note: 24 },
+		'7/4': { type: 'noteon', channel: 0, note: 25 },
+		'7/5': { type: 'noteon', channel: 0, note: 26 },
+		'7/6': { type: 'noteon', channel: 0, note: 27 },
+		'7/7': { type: 'noteon', channel: 0, note: 28 },
+		'7/8': { type: 'cc', channel: 0, note: 29 },
 
 		// Row 8 - notes 112-120
-		{ id: '8/0', type: 'noteon', channel: 0, note: 11 },
-		{ id: '8/1', type: 'noteon', channel: 0, note: 12 },
-		{ id: '8/2', type: 'noteon', channel: 0, note: 13 },
-		{ id: '8/3', type: 'noteon', channel: 0, note: 14 },
-		{ id: '8/4', type: 'noteon', channel: 0, note: 15 },
-		{ id: '8/5', type: 'noteon', channel: 0, note: 16 },
-		{ id: '8/6', type: 'noteon', channel: 0, note: 17 },
-		{ id: '8/7', type: 'noteon', channel: 0, note: 18 },
-		{ id: '8/8', type: 'cc', channel: 0, note: 19 },
-	],
+		'8/0': { type: 'noteon', channel: 0, note: 11 },
+		'8/1': { type: 'noteon', channel: 0, note: 12 },
+		'8/2': { type: 'noteon', channel: 0, note: 13 },
+		'8/3': { type: 'noteon', channel: 0, note: 14 },
+		'8/4': { type: 'noteon', channel: 0, note: 15 },
+		'8/5': { type: 'noteon', channel: 0, note: 16 },
+		'8/6': { type: 'noteon', channel: 0, note: 17 },
+		'8/7': { type: 'noteon', channel: 0, note: 18 },
+		'8/8': { type: 'cc', channel: 0, note: 19 },
+	},
 	command_writeKeyColour: function (controlId, color) {
-		const button = this.buttons.find((btn) => btn.id === controlId)
+		const button = this.buttons[controlId]
 		if (!button || button.note === -1) return []
 		return [
 			0xf0,
@@ -591,7 +596,7 @@ const NovationLaunchpadProMK3Layout: MidiLayoutDefinition = {
 		return [[0xf0, 0x00, 0x20, 0x29, 0x02, 0x0e, 0x0e, 0x00, 0x00, 0x00, 0xf7]]
 	},
 	command_writeKeyColour: function (controlId, color) {
-		const button = this.buttons.find((btn) => btn.id === controlId)
+		const button = this.buttons[controlId]
 		if (!button || button.note === -1) return []
 		return [
 			0xf0,
@@ -625,7 +630,7 @@ const NovationLaunchpadMiniMK3Layout: MidiLayoutDefinition = {
 		return [[0xf0, 0x00, 0x20, 0x29, 0x02, 0x0d, 0x0e, 0x00, 0xf7]]
 	},
 	command_writeKeyColour: function (controlId, color) {
-		const button = this.buttons.find((btn) => btn.id === controlId)
+		const button = this.buttons[controlId]
 		if (!button || button.note === -1) return []
 		return [
 			0xf0,
@@ -654,35 +659,35 @@ const NovationLaunchkeyMiniMK3Layout: MidiLayoutDefinition = {
 	// https://fael-downloads-prod.focusrite.com/customer/prod/downloads/launchkey_mk3_programmer_s_reference_guide_v1_en.pdf
 	supportsBrightness: false, // Colors are limited, most of them will become just black when allowing brightness, so we say we don't support it.
 	canChangePage: { label: 'Shift+Arp and Shift+FixedChord change Page' },
-	buttons: [
-		// Row 1 - notes 0-8 plus ">" button
-		{ id: '0/0', type: 'noteon', channel: 9, note: 40 },
-		{ id: '0/1', type: 'noteon', channel: 9, note: 41 },
-		{ id: '0/2', type: 'noteon', channel: 9, note: 42 },
-		{ id: '0/3', type: 'noteon', channel: 9, note: 43 },
-		{ id: '0/4', type: 'noteon', channel: 9, note: 48 },
-		{ id: '0/5', type: 'noteon', channel: 9, note: 49 },
-		{ id: '0/6', type: 'noteon', channel: 9, note: 50 },
-		{ id: '0/7', type: 'noteon', channel: 9, note: 51 },
-		{ id: '0/8', type: 'cc', channel: 0, note: 104 },
-		{ id: '0/9', type: 'cc', channel: 15, note: 115, extendedModeOnly: true }, // Play button - Does not support RGB: off/dimmed/on white - Extended mode only
+	buttons: {
+		// Row 1 - notes 0-8 plus ">" button (and additional midi play button)
+		'0/0': { type: 'noteon', channel: 9, note: 40 },
+		'0/1': { type: 'noteon', channel: 9, note: 41 },
+		'0/2': { type: 'noteon', channel: 9, note: 42 },
+		'0/3': { type: 'noteon', channel: 9, note: 43 },
+		'0/4': { type: 'noteon', channel: 9, note: 48 },
+		'0/5': { type: 'noteon', channel: 9, note: 49 },
+		'0/6': { type: 'noteon', channel: 9, note: 50 },
+		'0/7': { type: 'noteon', channel: 9, note: 51 },
+		'0/8': { type: 'cc', channel: 0, note: 104 },
+		'0/9': { type: 'cc', channel: 15, note: 115, extendedModeOnly: true }, // Play button - Does not support RGB: off/dimmed/on white - Extended mode only
 
-		// Row 2 - notes 9-16 plus "Stop/Solo/Mute" button
-		{ id: '1/0', type: 'noteon', channel: 9, note: 36 },
-		{ id: '1/1', type: 'noteon', channel: 9, note: 37 },
-		{ id: '1/2', type: 'noteon', channel: 9, note: 38 },
-		{ id: '1/3', type: 'noteon', channel: 9, note: 39 },
-		{ id: '1/4', type: 'noteon', channel: 9, note: 44 },
-		{ id: '1/5', type: 'noteon', channel: 9, note: 45 },
-		{ id: '1/6', type: 'noteon', channel: 9, note: 46 },
-		{ id: '1/7', type: 'noteon', channel: 9, note: 47 },
-		{ id: '1/8', type: 'cc', channel: 0, note: 105 },
-		{ id: '1/9', type: 'cc', channel: 15, note: 117, extendedModeOnly: true }, // Record button - Does not support RGB: off/dimmed/on white - Extended mode only
-	],
-	extraButtons: [
-		{ id: 'page/left', type: 'cc', channel: 15, note: 103 },
-		{ id: 'page/right', type: 'cc', channel: 15, note: 102 },
-	],
+		// Row 2 - notes 9-16 plus "Stop/Solo/Mute" button (and additional midi record button)
+		'1/0': { type: 'noteon', channel: 9, note: 36 },
+		'1/1': { type: 'noteon', channel: 9, note: 37 },
+		'1/2': { type: 'noteon', channel: 9, note: 38 },
+		'1/3': { type: 'noteon', channel: 9, note: 39 },
+		'1/4': { type: 'noteon', channel: 9, note: 44 },
+		'1/5': { type: 'noteon', channel: 9, note: 45 },
+		'1/6': { type: 'noteon', channel: 9, note: 46 },
+		'1/7': { type: 'noteon', channel: 9, note: 47 },
+		'1/8': { type: 'cc', channel: 0, note: 105 },
+		'1/9': { type: 'cc', channel: 15, note: 117, extendedModeOnly: true }, // Record button - Does not support RGB: off/dimmed/on white - Extended mode only
+	},
+	extraButtons: {
+		'page/left': { type: 'cc', channel: 15, note: 103 },
+		'page/right': { type: 'cc', channel: 15, note: 102 },
+	},
 	transferVariables: [
 		// Encoder Pots/Knobs, above the first row of buttons, all CC
 		{
@@ -793,7 +798,7 @@ const NovationLaunchkeyMiniMK3Layout: MidiLayoutDefinition = {
 		return [[0x90 | (15 & 0x0f), 12, 0]]
 	},
 	command_writeKeyColour: function (controlId, color) {
-		const button = this.buttons.find((btn) => btn.id === controlId)
+		const button = this.buttons[controlId]
 		if (!button) return []
 
 		if (button.extendedModeOnly) {
@@ -817,110 +822,110 @@ const AkaiAPCMiniMK2Layout: MidiLayoutDefinition = {
 	// https://cdn.inmusicbrands.com/akai/attachments/APC%20mini%20mk2%20-%20Communication%20Protocol%20-%20v1.0.pdf
 	supportsBrightness: true, // Brightness for preset colors would be done using the channel number: 0 = 10%, 1 = 25%, 2 = 50%, 3 = 65%, 4 = 75%, 5 = 90%, 6 = 100% but we have full RGB
 	canChangePage: { label: 'Track button 7 & 8 (arrow left and right) change Page' },
-	buttons: [
+	buttons: {
 		// Row 1
-		{ id: '0/0', type: 'noteon', channel: 0, note: 0x38 },
-		{ id: '0/1', type: 'noteon', channel: 0, note: 0x39 },
-		{ id: '0/2', type: 'noteon', channel: 0, note: 0x3a },
-		{ id: '0/3', type: 'noteon', channel: 0, note: 0x3b },
-		{ id: '0/4', type: 'noteon', channel: 0, note: 0x3c },
-		{ id: '0/5', type: 'noteon', channel: 0, note: 0x3d },
-		{ id: '0/6', type: 'noteon', channel: 0, note: 0x3e },
-		{ id: '0/7', type: 'noteon', channel: 0, note: 0x3f },
-		{ id: '0/8', type: 'noteon', channel: 0, note: 0x70, extendedModeOnly: true }, // Scene Launch - Does not support RGB: off/on green - Extended mode only
+		'0/0': { type: 'noteon', channel: 0, note: 0x38 },
+		'0/1': { type: 'noteon', channel: 0, note: 0x39 },
+		'0/2': { type: 'noteon', channel: 0, note: 0x3a },
+		'0/3': { type: 'noteon', channel: 0, note: 0x3b },
+		'0/4': { type: 'noteon', channel: 0, note: 0x3c },
+		'0/5': { type: 'noteon', channel: 0, note: 0x3d },
+		'0/6': { type: 'noteon', channel: 0, note: 0x3e },
+		'0/7': { type: 'noteon', channel: 0, note: 0x3f },
+		'0/8': { type: 'noteon', channel: 0, note: 0x70, extendedModeOnly: true }, // Scene Launch - Does not support RGB: off/on green - Extended mode only
 
 		// Row 2
-		{ id: '1/0', type: 'noteon', channel: 0, note: 0x30 },
-		{ id: '1/1', type: 'noteon', channel: 0, note: 0x31 },
-		{ id: '1/2', type: 'noteon', channel: 0, note: 0x32 },
-		{ id: '1/3', type: 'noteon', channel: 0, note: 0x33 },
-		{ id: '1/4', type: 'noteon', channel: 0, note: 0x34 },
-		{ id: '1/5', type: 'noteon', channel: 0, note: 0x35 },
-		{ id: '1/6', type: 'noteon', channel: 0, note: 0x36 },
-		{ id: '1/7', type: 'noteon', channel: 0, note: 0x37 },
-		{ id: '1/8', type: 'noteon', channel: 0, note: 0x71, extendedModeOnly: true }, // Scene Launch - Does not support RGB: off/on green - Extended mode only
+		'1/0': { type: 'noteon', channel: 0, note: 0x30 },
+		'1/1': { type: 'noteon', channel: 0, note: 0x31 },
+		'1/2': { type: 'noteon', channel: 0, note: 0x32 },
+		'1/3': { type: 'noteon', channel: 0, note: 0x33 },
+		'1/4': { type: 'noteon', channel: 0, note: 0x34 },
+		'1/5': { type: 'noteon', channel: 0, note: 0x35 },
+		'1/6': { type: 'noteon', channel: 0, note: 0x36 },
+		'1/7': { type: 'noteon', channel: 0, note: 0x37 },
+		'1/8': { type: 'noteon', channel: 0, note: 0x71, extendedModeOnly: true }, // Scene Launch - Does not support RGB: off/on green - Extended mode only
 
 		// Row 3
-		{ id: '2/0', type: 'noteon', channel: 0, note: 0x28 },
-		{ id: '2/1', type: 'noteon', channel: 0, note: 0x29 },
-		{ id: '2/2', type: 'noteon', channel: 0, note: 0x2a },
-		{ id: '2/3', type: 'noteon', channel: 0, note: 0x2b },
-		{ id: '2/4', type: 'noteon', channel: 0, note: 0x2c },
-		{ id: '2/5', type: 'noteon', channel: 0, note: 0x2d },
-		{ id: '2/6', type: 'noteon', channel: 0, note: 0x2e },
-		{ id: '2/7', type: 'noteon', channel: 0, note: 0x2f },
-		{ id: '2/8', type: 'noteon', channel: 0, note: 0x72, extendedModeOnly: true }, // Scene Launch - Does not support RGB: off/on green - Extended mode only
+		'2/0': { type: 'noteon', channel: 0, note: 0x28 },
+		'2/1': { type: 'noteon', channel: 0, note: 0x29 },
+		'2/2': { type: 'noteon', channel: 0, note: 0x2a },
+		'2/3': { type: 'noteon', channel: 0, note: 0x2b },
+		'2/4': { type: 'noteon', channel: 0, note: 0x2c },
+		'2/5': { type: 'noteon', channel: 0, note: 0x2d },
+		'2/6': { type: 'noteon', channel: 0, note: 0x2e },
+		'2/7': { type: 'noteon', channel: 0, note: 0x2f },
+		'2/8': { type: 'noteon', channel: 0, note: 0x72, extendedModeOnly: true }, // Scene Launch - Does not support RGB: off/on green - Extended mode only
 
 		// Row 4
-		{ id: '3/0', type: 'noteon', channel: 0, note: 0x20 },
-		{ id: '3/1', type: 'noteon', channel: 0, note: 0x21 },
-		{ id: '3/2', type: 'noteon', channel: 0, note: 0x22 },
-		{ id: '3/3', type: 'noteon', channel: 0, note: 0x23 },
-		{ id: '3/4', type: 'noteon', channel: 0, note: 0x24 },
-		{ id: '3/5', type: 'noteon', channel: 0, note: 0x25 },
-		{ id: '3/6', type: 'noteon', channel: 0, note: 0x26 },
-		{ id: '3/7', type: 'noteon', channel: 0, note: 0x27 },
-		{ id: '3/8', type: 'noteon', channel: 0, note: 0x73, extendedModeOnly: true }, // Scene Launch - Does not support RGB: off/on green - Extended mode only
+		'3/0': { type: 'noteon', channel: 0, note: 0x20 },
+		'3/1': { type: 'noteon', channel: 0, note: 0x21 },
+		'3/2': { type: 'noteon', channel: 0, note: 0x22 },
+		'3/3': { type: 'noteon', channel: 0, note: 0x23 },
+		'3/4': { type: 'noteon', channel: 0, note: 0x24 },
+		'3/5': { type: 'noteon', channel: 0, note: 0x25 },
+		'3/6': { type: 'noteon', channel: 0, note: 0x26 },
+		'3/7': { type: 'noteon', channel: 0, note: 0x27 },
+		'3/8': { type: 'noteon', channel: 0, note: 0x73, extendedModeOnly: true }, // Scene Launch - Does not support RGB: off/on green - Extended mode only
 
 		// Row 5
-		{ id: '4/0', type: 'noteon', channel: 0, note: 0x18 },
-		{ id: '4/1', type: 'noteon', channel: 0, note: 0x19 },
-		{ id: '4/2', type: 'noteon', channel: 0, note: 0x1a },
-		{ id: '4/3', type: 'noteon', channel: 0, note: 0x1b },
-		{ id: '4/4', type: 'noteon', channel: 0, note: 0x1c },
-		{ id: '4/5', type: 'noteon', channel: 0, note: 0x1d },
-		{ id: '4/6', type: 'noteon', channel: 0, note: 0x1e },
-		{ id: '4/7', type: 'noteon', channel: 0, note: 0x1f },
-		{ id: '4/8', type: 'noteon', channel: 0, note: 0x74, extendedModeOnly: true }, // Scene Launch - Does not support RGB: off/on green - Extended mode only
+		'4/0': { type: 'noteon', channel: 0, note: 0x18 },
+		'4/1': { type: 'noteon', channel: 0, note: 0x19 },
+		'4/2': { type: 'noteon', channel: 0, note: 0x1a },
+		'4/3': { type: 'noteon', channel: 0, note: 0x1b },
+		'4/4': { type: 'noteon', channel: 0, note: 0x1c },
+		'4/5': { type: 'noteon', channel: 0, note: 0x1d },
+		'4/6': { type: 'noteon', channel: 0, note: 0x1e },
+		'4/7': { type: 'noteon', channel: 0, note: 0x1f },
+		'4/8': { type: 'noteon', channel: 0, note: 0x74, extendedModeOnly: true }, // Scene Launch - Does not support RGB: off/on green - Extended mode only
 
 		// Row 6
-		{ id: '5/0', type: 'noteon', channel: 0, note: 0x10 },
-		{ id: '5/1', type: 'noteon', channel: 0, note: 0x11 },
-		{ id: '5/2', type: 'noteon', channel: 0, note: 0x12 },
-		{ id: '5/3', type: 'noteon', channel: 0, note: 0x13 },
-		{ id: '5/4', type: 'noteon', channel: 0, note: 0x14 },
-		{ id: '5/5', type: 'noteon', channel: 0, note: 0x15 },
-		{ id: '5/6', type: 'noteon', channel: 0, note: 0x16 },
-		{ id: '5/7', type: 'noteon', channel: 0, note: 0x17 },
-		{ id: '5/8', type: 'noteon', channel: 0, note: 0x75, extendedModeOnly: true }, // Scene Launch - Does not support RGB: off/on green - Extended mode only
+		'5/0': { type: 'noteon', channel: 0, note: 0x10 },
+		'5/1': { type: 'noteon', channel: 0, note: 0x11 },
+		'5/2': { type: 'noteon', channel: 0, note: 0x12 },
+		'5/3': { type: 'noteon', channel: 0, note: 0x13 },
+		'5/4': { type: 'noteon', channel: 0, note: 0x14 },
+		'5/5': { type: 'noteon', channel: 0, note: 0x15 },
+		'5/6': { type: 'noteon', channel: 0, note: 0x16 },
+		'5/7': { type: 'noteon', channel: 0, note: 0x17 },
+		'5/8': { type: 'noteon', channel: 0, note: 0x75, extendedModeOnly: true }, // Scene Launch - Does not support RGB: off/on green - Extended mode only
 
 		// Row 7
-		{ id: '6/0', type: 'noteon', channel: 0, note: 0x08 },
-		{ id: '6/1', type: 'noteon', channel: 0, note: 0x09 },
-		{ id: '6/2', type: 'noteon', channel: 0, note: 0x0a },
-		{ id: '6/3', type: 'noteon', channel: 0, note: 0x0b },
-		{ id: '6/4', type: 'noteon', channel: 0, note: 0x0c },
-		{ id: '6/5', type: 'noteon', channel: 0, note: 0x0d },
-		{ id: '6/6', type: 'noteon', channel: 0, note: 0x0e },
-		{ id: '6/7', type: 'noteon', channel: 0, note: 0x0f },
-		{ id: '6/8', type: 'noteon', channel: 0, note: 0x76, extendedModeOnly: true }, // Scene Launch - Does not support RGB: off/on green - Extended mode only
+		'6/0': { type: 'noteon', channel: 0, note: 0x08 },
+		'6/1': { type: 'noteon', channel: 0, note: 0x09 },
+		'6/2': { type: 'noteon', channel: 0, note: 0x0a },
+		'6/3': { type: 'noteon', channel: 0, note: 0x0b },
+		'6/4': { type: 'noteon', channel: 0, note: 0x0c },
+		'6/5': { type: 'noteon', channel: 0, note: 0x0d },
+		'6/6': { type: 'noteon', channel: 0, note: 0x0e },
+		'6/7': { type: 'noteon', channel: 0, note: 0x0f },
+		'6/8': { type: 'noteon', channel: 0, note: 0x76, extendedModeOnly: true }, // Scene Launch - Does not support RGB: off/on green - Extended mode only
 
 		// Row 8
-		{ id: '7/0', type: 'noteon', channel: 0, note: 0x00 },
-		{ id: '7/1', type: 'noteon', channel: 0, note: 0x01 },
-		{ id: '7/2', type: 'noteon', channel: 0, note: 0x02 },
-		{ id: '7/3', type: 'noteon', channel: 0, note: 0x03 },
-		{ id: '7/4', type: 'noteon', channel: 0, note: 0x04 },
-		{ id: '7/5', type: 'noteon', channel: 0, note: 0x05 },
-		{ id: '7/6', type: 'noteon', channel: 0, note: 0x06 },
-		{ id: '7/7', type: 'noteon', channel: 0, note: 0x07 },
-		{ id: '7/8', type: 'noteon', channel: 0, note: 0x77, extendedModeOnly: true }, // Scene Launch - Does not support RGB: off/on green - Extended mode only
+		'7/0': { type: 'noteon', channel: 0, note: 0x00 },
+		'7/1': { type: 'noteon', channel: 0, note: 0x01 },
+		'7/2': { type: 'noteon', channel: 0, note: 0x02 },
+		'7/3': { type: 'noteon', channel: 0, note: 0x03 },
+		'7/4': { type: 'noteon', channel: 0, note: 0x04 },
+		'7/5': { type: 'noteon', channel: 0, note: 0x05 },
+		'7/6': { type: 'noteon', channel: 0, note: 0x06 },
+		'7/7': { type: 'noteon', channel: 0, note: 0x07 },
+		'7/8': { type: 'noteon', channel: 0, note: 0x77, extendedModeOnly: true }, // Scene Launch - Does not support RGB: off/on green - Extended mode only
 
 		// Row 9 - Track Buttons 1-8 - Does not support RGB: off/on red - Extended mode only
-		{ id: '8/0', type: 'noteon', channel: 0, note: 0x64, extendedModeOnly: true },
-		{ id: '8/1', type: 'noteon', channel: 0, note: 0x65, extendedModeOnly: true },
-		{ id: '8/2', type: 'noteon', channel: 0, note: 0x66, extendedModeOnly: true },
-		{ id: '8/3', type: 'noteon', channel: 0, note: 0x67, extendedModeOnly: true },
-		{ id: '8/4', type: 'noteon', channel: 0, note: 0x68, extendedModeOnly: true },
-		{ id: '8/5', type: 'noteon', channel: 0, note: 0x69, extendedModeOnly: true },
-		{ id: '8/6', type: 'noteon', channel: 0, note: 0x6a, extendedModeOnly: true },
-		{ id: '8/7', type: 'noteon', channel: 0, note: 0x6b, extendedModeOnly: true },
-		{ id: '8/8', type: 'noteon', channel: 0, note: 0x7a, extendedModeOnly: true }, // Shift button - Does not support color at all - Extended mode only
-	],
-	extraButtons: [
-		{ id: 'page/left', type: 'noteon', channel: 0, note: 0x6a },
-		{ id: 'page/right', type: 'noteon', channel: 0, note: 0x6b },
-	],
+		'8/0': { type: 'noteon', channel: 0, note: 0x64, extendedModeOnly: true },
+		'8/1': { type: 'noteon', channel: 0, note: 0x65, extendedModeOnly: true },
+		'8/2': { type: 'noteon', channel: 0, note: 0x66, extendedModeOnly: true },
+		'8/3': { type: 'noteon', channel: 0, note: 0x67, extendedModeOnly: true },
+		'8/4': { type: 'noteon', channel: 0, note: 0x68, extendedModeOnly: true },
+		'8/5': { type: 'noteon', channel: 0, note: 0x69, extendedModeOnly: true },
+		'8/6': { type: 'noteon', channel: 0, note: 0x6a, extendedModeOnly: true },
+		'8/7': { type: 'noteon', channel: 0, note: 0x6b, extendedModeOnly: true },
+		'8/8': { type: 'noteon', channel: 0, note: 0x7a, extendedModeOnly: true }, // Shift button - Does not support color at all - Extended mode only
+	},
+	extraButtons: {
+		'page/left': { type: 'noteon', channel: 0, note: 0x6a },
+		'page/right': { type: 'noteon', channel: 0, note: 0x6b },
+	},
 	transferVariables: [
 		// Faders below the last row
 		{
@@ -1004,7 +1009,7 @@ const AkaiAPCMiniMK2Layout: MidiLayoutDefinition = {
 		return [] // Unsure what to do here
 	},
 	command_writeKeyColour: function (controlId, color) {
-		const button = this.buttons.find((btn) => btn.id === controlId)
+		const button = this.buttons[controlId]
 		if (!button) return []
 
 		if (button.extendedModeOnly) {
@@ -1072,21 +1077,22 @@ const AkaiAPCMiniLayout: MidiLayoutDefinition = {
 		label:
 			'Track buttons 3 & 4 (arrow left and right) change Page ---- NOTE about controller: only Green, Red and Yellow colors are available on this controller!',
 	},
-	extraButtons: [
-		{ id: 'page/left', type: 'noteon', channel: 0, note: 66 },
-		{ id: 'page/right', type: 'noteon', channel: 0, note: 67 },
-	],
+	extraButtons: {
+		'page/left': { type: 'noteon', channel: 0, note: 66 },
+		'page/right': { type: 'noteon', channel: 0, note: 67 },
+	},
 	command_clearPanel: function () {
-		return [[]]
+		return []
 	},
 	command_shutdown: function () {
-		return [[]]
+		return []
 	},
 	command_writeKeyColour: function (controlId, color) {
-		const button = this.buttons.find((btn) => btn.id === controlId)
+		const button = this.buttons[controlId]
 		if (!button) return []
 
 		const lpColorIndex = getClosestApcMiniColor(color) // There's only three colors!
+		if (lpColorIndex === -1) return []
 		return [(button.type === 'noteon' ? 0x90 : 0xb0) | (button.channel & 0x0f), button.note & 0x7f, lpColorIndex & 0x7f]
 	},
 	isColorTooBlack: function (color) {
@@ -1102,61 +1108,61 @@ const AkaiAPC40MK2Layout: MidiLayoutDefinition = {
 	canChangePage: {
 		label: 'Bank left and right change Page',
 	},
-	buttons: [
+	buttons: {
 		// Row 1
-		{ id: '0/0', type: 'noteon', channel: 0, note: 32 },
-		{ id: '0/1', type: 'noteon', channel: 0, note: 33 },
-		{ id: '0/2', type: 'noteon', channel: 0, note: 34 },
-		{ id: '0/3', type: 'noteon', channel: 0, note: 35 },
-		{ id: '0/4', type: 'noteon', channel: 0, note: 36 },
-		{ id: '0/5', type: 'noteon', channel: 0, note: 37 },
-		{ id: '0/6', type: 'noteon', channel: 0, note: 38 },
-		{ id: '0/7', type: 'noteon', channel: 0, note: 39 },
+		'0/0': { type: 'noteon', channel: 0, note: 32 },
+		'0/1': { type: 'noteon', channel: 0, note: 33 },
+		'0/2': { type: 'noteon', channel: 0, note: 34 },
+		'0/3': { type: 'noteon', channel: 0, note: 35 },
+		'0/4': { type: 'noteon', channel: 0, note: 36 },
+		'0/5': { type: 'noteon', channel: 0, note: 37 },
+		'0/6': { type: 'noteon', channel: 0, note: 38 },
+		'0/7': { type: 'noteon', channel: 0, note: 39 },
 
 		// Row 2
-		{ id: '1/0', type: 'noteon', channel: 0, note: 24 },
-		{ id: '1/1', type: 'noteon', channel: 0, note: 25 },
-		{ id: '1/2', type: 'noteon', channel: 0, note: 26 },
-		{ id: '1/3', type: 'noteon', channel: 0, note: 27 },
-		{ id: '1/4', type: 'noteon', channel: 0, note: 28 },
-		{ id: '1/5', type: 'noteon', channel: 0, note: 29 },
-		{ id: '1/6', type: 'noteon', channel: 0, note: 30 },
-		{ id: '1/7', type: 'noteon', channel: 0, note: 31 },
+		'1/0': { type: 'noteon', channel: 0, note: 24 },
+		'1/1': { type: 'noteon', channel: 0, note: 25 },
+		'1/2': { type: 'noteon', channel: 0, note: 26 },
+		'1/3': { type: 'noteon', channel: 0, note: 27 },
+		'1/4': { type: 'noteon', channel: 0, note: 28 },
+		'1/5': { type: 'noteon', channel: 0, note: 29 },
+		'1/6': { type: 'noteon', channel: 0, note: 30 },
+		'1/7': { type: 'noteon', channel: 0, note: 31 },
 
 		// Row 3
-		{ id: '2/0', type: 'noteon', channel: 0, note: 16 },
-		{ id: '2/1', type: 'noteon', channel: 0, note: 17 },
-		{ id: '2/2', type: 'noteon', channel: 0, note: 18 },
-		{ id: '2/3', type: 'noteon', channel: 0, note: 19 },
-		{ id: '2/4', type: 'noteon', channel: 0, note: 20 },
-		{ id: '2/5', type: 'noteon', channel: 0, note: 21 },
-		{ id: '2/6', type: 'noteon', channel: 0, note: 22 },
-		{ id: '2/7', type: 'noteon', channel: 0, note: 23 },
+		'2/0': { type: 'noteon', channel: 0, note: 16 },
+		'2/1': { type: 'noteon', channel: 0, note: 17 },
+		'2/2': { type: 'noteon', channel: 0, note: 18 },
+		'2/3': { type: 'noteon', channel: 0, note: 19 },
+		'2/4': { type: 'noteon', channel: 0, note: 20 },
+		'2/5': { type: 'noteon', channel: 0, note: 21 },
+		'2/6': { type: 'noteon', channel: 0, note: 22 },
+		'2/7': { type: 'noteon', channel: 0, note: 23 },
 
 		// Row 4
-		{ id: '3/0', type: 'noteon', channel: 0, note: 8 },
-		{ id: '3/1', type: 'noteon', channel: 0, note: 9 },
-		{ id: '3/2', type: 'noteon', channel: 0, note: 10 },
-		{ id: '3/3', type: 'noteon', channel: 0, note: 11 },
-		{ id: '3/4', type: 'noteon', channel: 0, note: 12 },
-		{ id: '3/5', type: 'noteon', channel: 0, note: 13 },
-		{ id: '3/6', type: 'noteon', channel: 0, note: 14 },
-		{ id: '3/7', type: 'noteon', channel: 0, note: 15 },
+		'3/0': { type: 'noteon', channel: 0, note: 8 },
+		'3/1': { type: 'noteon', channel: 0, note: 9 },
+		'3/2': { type: 'noteon', channel: 0, note: 10 },
+		'3/3': { type: 'noteon', channel: 0, note: 11 },
+		'3/4': { type: 'noteon', channel: 0, note: 12 },
+		'3/5': { type: 'noteon', channel: 0, note: 13 },
+		'3/6': { type: 'noteon', channel: 0, note: 14 },
+		'3/7': { type: 'noteon', channel: 0, note: 15 },
 
 		// Row 5
-		{ id: '4/0', type: 'noteon', channel: 0, note: 0 },
-		{ id: '4/1', type: 'noteon', channel: 0, note: 1 },
-		{ id: '4/2', type: 'noteon', channel: 0, note: 2 },
-		{ id: '4/3', type: 'noteon', channel: 0, note: 3 },
-		{ id: '4/4', type: 'noteon', channel: 0, note: 4 },
-		{ id: '4/5', type: 'noteon', channel: 0, note: 5 },
-		{ id: '4/6', type: 'noteon', channel: 0, note: 6 },
-		{ id: '4/7', type: 'noteon', channel: 0, note: 7 },
-	],
-	extraButtons: [
-		{ id: 'page/left', type: 'noteon', channel: 0, note: 0x3c },
-		{ id: 'page/right', type: 'noteon', channel: 0, note: 0x3d },
-	],
+		'4/0': { type: 'noteon', channel: 0, note: 0 },
+		'4/1': { type: 'noteon', channel: 0, note: 1 },
+		'4/2': { type: 'noteon', channel: 0, note: 2 },
+		'4/3': { type: 'noteon', channel: 0, note: 3 },
+		'4/4': { type: 'noteon', channel: 0, note: 4 },
+		'4/5': { type: 'noteon', channel: 0, note: 5 },
+		'4/6': { type: 'noteon', channel: 0, note: 6 },
+		'4/7': { type: 'noteon', channel: 0, note: 7 },
+	},
+	extraButtons: {
+		'page/left': { type: 'noteon', channel: 0, note: 0x3c },
+		'page/right': { type: 'noteon', channel: 0, note: 0x3d },
+	},
 	transferVariables: [
 		// Track faders
 		{
@@ -1376,10 +1382,10 @@ const AkaiAPC40MK2Layout: MidiLayoutDefinition = {
 		return [[0xf0, 0x47, 0x7f, 0x29, 0x60, 0x00, 0x04, 0x41, 0x01, 0x00, 0x00, 0xf7]]
 	},
 	command_shutdown: function () {
-		return [[]]
+		return []
 	},
 	command_writeKeyColour: function (controlId, color) {
-		const button = this.buttons.find((btn) => btn.id === controlId)
+		const button = this.buttons[controlId]
 		if (!button) return []
 
 		const lpColorIndex = getClosestApcColor(color) // There's only three colors!
@@ -1394,34 +1400,34 @@ const AkaiAPC40MK2Layout: MidiLayoutDefinition = {
 const AkaiMpkMiniMk3Layout: MidiLayoutDefinition = {
 	// No known documentation. This one was done by 'bruteforcing' with a friend
 	supportsBrightness: false, // doesn't even support color...
-	buttons: [
+	buttons: {
 		// Bank B - Row 1
-		{ id: '0/0', type: 'noteon', channel: 9, note: 48 },
-		{ id: '0/1', type: 'noteon', channel: 9, note: 49 },
-		{ id: '0/2', type: 'noteon', channel: 9, note: 50 },
-		{ id: '0/3', type: 'noteon', channel: 9, note: 51 },
+		'0/0': { type: 'noteon', channel: 9, note: 48 },
+		'0/1': { type: 'noteon', channel: 9, note: 49 },
+		'0/2': { type: 'noteon', channel: 9, note: 50 },
+		'0/3': { type: 'noteon', channel: 9, note: 51 },
 		// Bank B - Row 2
-		{ id: '1/0', type: 'noteon', channel: 9, note: 44 },
-		{ id: '1/1', type: 'noteon', channel: 9, note: 45 },
-		{ id: '1/2', type: 'noteon', channel: 9, note: 46 },
-		{ id: '1/3', type: 'noteon', channel: 9, note: 47 },
+		'1/0': { type: 'noteon', channel: 9, note: 44 },
+		'1/1': { type: 'noteon', channel: 9, note: 45 },
+		'1/2': { type: 'noteon', channel: 9, note: 46 },
+		'1/3': { type: 'noteon', channel: 9, note: 47 },
 
 		// Bank A - Row 1
-		{ id: '2/0', type: 'noteon', channel: 9, note: 40 },
-		{ id: '2/1', type: 'noteon', channel: 9, note: 41 },
-		{ id: '2/2', type: 'noteon', channel: 9, note: 42 },
-		{ id: '2/3', type: 'noteon', channel: 9, note: 43 },
+		'2/0': { type: 'noteon', channel: 9, note: 40 },
+		'2/1': { type: 'noteon', channel: 9, note: 41 },
+		'2/2': { type: 'noteon', channel: 9, note: 42 },
+		'2/3': { type: 'noteon', channel: 9, note: 43 },
 		// Bank A - Row 2
-		{ id: '3/0', type: 'noteon', channel: 9, note: 36 },
-		{ id: '3/1', type: 'noteon', channel: 9, note: 37 },
-		{ id: '3/2', type: 'noteon', channel: 9, note: 38 },
-		{ id: '3/3', type: 'noteon', channel: 9, note: 39 },
-	],
+		'3/0': { type: 'noteon', channel: 9, note: 36 },
+		'3/1': { type: 'noteon', channel: 9, note: 37 },
+		'3/2': { type: 'noteon', channel: 9, note: 38 },
+		'3/3': { type: 'noteon', channel: 9, note: 39 },
+	},
 	command_clearPanel: function () {
-		return [[]]
+		return []
 	},
 	command_shutdown: function () {
-		return [[]]
+		return []
 	},
 	command_writeKeyColour: function (_controlId, _color) {
 		// Only being red... and cannot seem to color any surface...
@@ -1437,31 +1443,31 @@ const AkaiMIDImixLayout: MidiLayoutDefinition = {
 	// https://cdn.inmusicbrands.com/akai/attachments/MIDIMIX/MIDImix-UserGuide-v1.0.pdf
 	supportsBrightness: false, // doesn't even support color...
 	canChangePage: { label: 'Bank left/right change Page' },
-	buttons: [
+	buttons: {
 		// Row 1 - Mute
-		{ id: '0/0', type: 'noteon', channel: 0, note: 1 },
-		{ id: '0/1', type: 'noteon', channel: 0, note: 4 },
-		{ id: '0/2', type: 'noteon', channel: 0, note: 7 },
-		{ id: '0/3', type: 'noteon', channel: 0, note: 10 },
-		{ id: '0/4', type: 'noteon', channel: 0, note: 13 },
-		{ id: '0/5', type: 'noteon', channel: 0, note: 16 },
-		{ id: '0/6', type: 'noteon', channel: 0, note: 19 },
-		{ id: '0/7', type: 'noteon', channel: 0, note: 22 },
+		'0/0': { type: 'noteon', channel: 0, note: 1 },
+		'0/1': { type: 'noteon', channel: 0, note: 4 },
+		'0/2': { type: 'noteon', channel: 0, note: 7 },
+		'0/3': { type: 'noteon', channel: 0, note: 10 },
+		'0/4': { type: 'noteon', channel: 0, note: 13 },
+		'0/5': { type: 'noteon', channel: 0, note: 16 },
+		'0/6': { type: 'noteon', channel: 0, note: 19 },
+		'0/7': { type: 'noteon', channel: 0, note: 22 },
 
 		// Row 2 - Rec arm
-		{ id: '1/0', type: 'noteon', channel: 0, note: 3 },
-		{ id: '1/1', type: 'noteon', channel: 0, note: 6 },
-		{ id: '1/2', type: 'noteon', channel: 0, note: 9 },
-		{ id: '1/3', type: 'noteon', channel: 0, note: 12 },
-		{ id: '1/4', type: 'noteon', channel: 0, note: 15 },
-		{ id: '1/5', type: 'noteon', channel: 0, note: 18 },
-		{ id: '1/6', type: 'noteon', channel: 0, note: 21 },
-		{ id: '1/7', type: 'noteon', channel: 0, note: 24 },
-	],
-	extraButtons: [
-		{ id: 'page/left', type: 'noteon', channel: 0, note: 25 },
-		{ id: 'page/right', type: 'noteon', channel: 0, note: 26 },
-	],
+		'1/0': { type: 'noteon', channel: 0, note: 3 },
+		'1/1': { type: 'noteon', channel: 0, note: 6 },
+		'1/2': { type: 'noteon', channel: 0, note: 9 },
+		'1/3': { type: 'noteon', channel: 0, note: 12 },
+		'1/4': { type: 'noteon', channel: 0, note: 15 },
+		'1/5': { type: 'noteon', channel: 0, note: 18 },
+		'1/6': { type: 'noteon', channel: 0, note: 21 },
+		'1/7': { type: 'noteon', channel: 0, note: 24 },
+	},
+	extraButtons: {
+		'page/left': { type: 'noteon', channel: 0, note: 25 },
+		'page/right': { type: 'noteon', channel: 0, note: 26 },
+	},
 	transferVariables: [
 		{
 			id: '0/0',
@@ -1733,13 +1739,13 @@ const AkaiMIDImixLayout: MidiLayoutDefinition = {
 		},
 	],
 	command_clearPanel: function () {
-		return [[]]
+		return []
 	},
 	command_shutdown: function () {
-		return [[]]
+		return []
 	},
 	command_writeKeyColour: function (controlId, color) {
-		const button = this.buttons.find((btn) => btn.id === controlId)
+		const button = this.buttons[controlId]
 		if (!button) return []
 
 		return [
