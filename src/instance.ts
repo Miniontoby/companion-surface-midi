@@ -20,6 +20,7 @@ export class MidiWrapper implements SurfaceInstance {
 
 	readonly #input: Input
 	readonly #output: Output
+	readonly #outputWasOpenAtStart: boolean = false
 	readonly #inputPortName: string
 	readonly #outputPortName: string
 	readonly #surfaceId: string
@@ -56,6 +57,7 @@ export class MidiWrapper implements SurfaceInstance {
 		this.#logger = createModuleLogger(`Instance/${surfaceId}`)
 		this.#input = input
 		this.#output = output
+		this.#outputWasOpenAtStart = output.isPortOpen()
 		this.#inputPortName = inputPortName
 		this.#outputPortName = outputPortName
 		this.#surfaceId = surfaceId
@@ -341,7 +343,7 @@ export class MidiWrapper implements SurfaceInstance {
 		if (!this.#input.isPortOpen()) {
 			this.#context.disconnect(new Error('Input port closed'))
 			disconnected = true
-		} else if (!this.#output.isPortOpen()) {
+		} else if (this.#outputWasOpenAtStart && !this.#output.isPortOpen()) {
 			this.#context.disconnect(new Error('Output port closed'))
 			disconnected = true
 		} else if (!getInputs().includes(this.#inputPortName)) {
@@ -349,7 +351,7 @@ export class MidiWrapper implements SurfaceInstance {
 			this.#output.closePort()
 			this.#context.disconnect(new Error('Input port is lost'))
 			disconnected = true
-		} else if (!getOutputs().includes(this.#outputPortName)) {
+		} else if (this.#outputWasOpenAtStart && !getOutputs().includes(this.#outputPortName)) {
 			this.#input.closePort()
 			this.#output.closePort()
 			this.#context.disconnect(new Error('Output port is lost'))

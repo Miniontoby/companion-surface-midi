@@ -1757,7 +1757,7 @@ const AkaiMIDImixLayout: MidiLayoutDefinition = {
 // TODO add Ayra digicon 1 support someday
 
 // Regex devices, can technically use `$1` in the outputName to get the number of the regex
-export const DeviceMappings: { [input: string]: { outputName?: string; layout?: MidiLayoutDefinition } } = {
+export const DeviceMappings: { [input: string]: { outputName?: string; layout?: MidiLayoutDefinition } | undefined } = {
 	// Launchpad Mini MK2
 	// - Linux:
 	'/Launchpad Mini:Launchpad Mini MIDI 1 ([0-9]+):0/': {

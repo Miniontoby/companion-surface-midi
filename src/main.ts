@@ -23,40 +23,64 @@ const MidiPlugin: SurfacePlugin<MidiDeviceInfo> = {
 	scanForSurfaces: async (): Promise<DetectionSurfaceInfo<MidiDeviceInfo>[]> => {
 		const discovered: DetectionSurfaceInfo<MidiDeviceInfo>[] = []
 
+		const inputs = getInputs()
 		const outputs = getOutputs()
-		getInputs().forEach((name, i) => {
-			let deviceMapping = DeviceMappings[name]
-			if (!deviceMapping) {
-				deviceMapping = DeviceMappings[name.replace(/ [0-9]+$/m, '')]
-				if (!deviceMapping) {
+		let i = -1
+		for (const inputPortName of inputs) {
+			i++
+
+			let outputName: string | undefined = undefined
+			let deviceMapping = DeviceMappings[inputPortName]
+			if (deviceMapping === undefined) {
+				// If there's multiple of the same device, the name will have an index at the end
+				deviceMapping = DeviceMappings[inputPortName.replace(/ [0-9]+$/m, '')]
+				if (deviceMapping === undefined) {
 					for (const { regex, name: regexName } of DeviceMappingsWithRegex) {
-						if (regex.exec(name) !== null) {
+						if (regex.exec(inputPortName) !== null) {
 							deviceMapping = DeviceMappings[regexName]
-							if (deviceMapping.outputName !== undefined)
-								deviceMapping.outputName = name.replace(regex, deviceMapping.outputName)
+							if (deviceMapping === undefined) {
+								// Unsure how this would happen, probably only when the regexName has not been updated...
+								console.error(
+									'This should never happen, but for some reason the regexName',
+									regexName,
+									'does not have a DeviceMappings entry linked',
+								)
+							} else {
+								if (deviceMapping.outputName !== undefined) {
+									outputName = inputPortName.replace(regex, deviceMapping.outputName)
+								}
+								// Found it, break the for loop
+								break
+							}
 						}
 					}
+
+					if (!deviceMapping) {
+						// Does not have a known name
+						continue
+					}
+				} else if (deviceMapping.outputName !== undefined) {
+					// Add index to outputName, so it can match. Assuming if the input port has an index, then the outputPort has too, as it does indicate a duplicate
+					outputName = deviceMapping.outputName + inputPortName.replace(/.* ([0-9]+)$/m, ' $1')
 				}
+			} else if (deviceMapping.outputName !== undefined) {
+				outputName = deviceMapping.outputName
 			}
 
-			if (deviceMapping?.layout)
+			if (deviceMapping.layout !== undefined) {
+				const findOutputName = outputName !== undefined ? outputName : inputPortName
 				discovered.push({
-					deviceHandle: `midi:${name}`,
-					surfaceId: `midi:${name}`,
-					description: `MIDI Port ${i}: ${name}`,
+					deviceHandle: `midi:${inputPortName}`,
+					surfaceId: `midi:${inputPortName}`,
+					description: `MIDI Port ${i}: ${inputPortName}`,
 					pluginInfo: {
-						inputPortName: name,
-						outputPortName:
-							outputs.find(
-								(output) =>
-									(deviceMapping.outputName ? output === deviceMapping.outputName : false) ||
-									output === name ||
-									output.replace(/ [0-9]+$/m, '') === name,
-							) ?? name,
+						inputPortName: inputPortName,
+						outputPortName: outputs.find((output) => output === findOutputName),
 						layout: deviceMapping.layout,
 					},
 				})
-		})
+			}
+		}
 
 		return discovered
 	},
