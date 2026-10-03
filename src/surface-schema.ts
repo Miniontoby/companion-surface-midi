@@ -1,21 +1,31 @@
 import type { SurfaceSchemaLayoutDefinition } from '@companion-surface/base'
-import { MidiLayoutDefinition } from './tmp-layout.js'
+import type { MidiLayoutDefinition } from './tmp-layout.js'
+import { parseControlId } from './util.js'
 
-export function createSurfaceSchema(layout: MidiLayoutDefinition): SurfaceSchemaLayoutDefinition {
+export function createSurfaceSchema(
+	layout: MidiLayoutDefinition,
+	// extendedMode: boolean = false,
+): SurfaceSchemaLayoutDefinition {
 	const surfaceLayout: SurfaceSchemaLayoutDefinition = {
 		stylePresets: {
 			default: {
 				colors: 'hex',
+				bitmap: {
+					w: 8,
+					h: 8,
+					format: 'rgb',
+				},
 			},
 		},
 		controls: {},
 	}
 
-	for (const button of layout.buttons) {
-		surfaceLayout.controls[button.id] = {
-			row: button.row,
-			column: button.column,
-			// TODO - style?
+	for (const buttonId in layout.buttons) {
+		// if (button.extendedModeOnly === true && !extendedMode) continue // skip these
+		const { row, column } = parseControlId(buttonId)
+		surfaceLayout.controls[buttonId] = {
+			row: row,
+			column: column,
 		}
 	}
 

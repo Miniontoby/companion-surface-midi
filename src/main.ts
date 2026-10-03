@@ -1,11 +1,15 @@
-import type { DiscoveredSurfaceInfo, OpenSurfaceResult, SurfaceContext, SurfacePlugin } from '@companion-surface/base'
+import type { DetectionSurfaceInfo, OpenSurfaceResult, SurfaceContext, SurfacePlugin } from '@companion-surface/base'
+import { Input, Output } from '@julusian/midi/lazy'
+import { DeviceMappings, DeviceMappingsWithRegex, type MidiLayoutDefinition } from './tmp-layout.js'
 import { MidiWrapper } from './instance.js'
 import { createSurfaceSchema } from './surface-schema.js'
-import { Input, Output } from '@julusian/midi'
-import { MidiLayoutDefinition, NovationLaunchpadLayoutTest } from './tmp-layout.js'
+import { createPincodeMap } from './pincode.js'
+import { getInputs, getOutputs } from './midi-helper.js'
 
 export interface MidiDeviceInfo {
 	inputPortName: string
+	outputPortName?: string
+	layout: MidiLayoutDefinition
 }
 
 const MidiPlugin: SurfacePlugin<MidiDeviceInfo> = {
@@ -16,21 +20,67 @@ const MidiPlugin: SurfacePlugin<MidiDeviceInfo> = {
 		// Nothing to do
 	},
 
-	scanForSurfaces: async (): Promise<DiscoveredSurfaceInfo<MidiDeviceInfo>[]> => {
-		const discovered: DiscoveredSurfaceInfo<MidiDeviceInfo>[] = []
+	scanForSurfaces: async (): Promise<DetectionSurfaceInfo<MidiDeviceInfo>[]> => {
+		const discovered: DetectionSurfaceInfo<MidiDeviceInfo>[] = []
 
-		Input.getPortNames().forEach((name, i) => {
-			// Future: maybe filter names here to only show certain devices
-			console.log(`MIDI Input Port ${i}: ${name}`)
+		const inputs = getInputs()
+		const outputs = getOutputs()
+		let i = -1
+		for (const inputPortName of inputs) {
+			i++
 
-			discovered.push({
-				surfaceId: `midi:${i}`,
-				description: `MIDI Port ${i}: ${name}`,
-				pluginInfo: {
-					inputPortName: name,
-				},
-			})
-		})
+			let outputName: string | undefined = undefined
+			let deviceMapping = DeviceMappings[inputPortName]
+			if (deviceMapping === undefined) {
+				// If there's multiple of the same device, the name will have an index at the end
+				deviceMapping = DeviceMappings[inputPortName.replace(/ [0-9]+$/m, '')]
+				if (deviceMapping === undefined) {
+					for (const { regex, name: regexName } of DeviceMappingsWithRegex) {
+						if (regex.exec(inputPortName) !== null) {
+							deviceMapping = DeviceMappings[regexName]
+							if (deviceMapping === undefined) {
+								// Unsure how this would happen, probably only when the regexName has not been updated...
+								console.error(
+									'This should never happen, but for some reason the regexName',
+									regexName,
+									'does not have a DeviceMappings entry linked',
+								)
+							} else {
+								if (deviceMapping.outputName !== undefined) {
+									outputName = inputPortName.replace(regex, deviceMapping.outputName)
+								}
+								// Found it, break the for loop
+								break
+							}
+						}
+					}
+
+					if (!deviceMapping) {
+						// Does not have a known name
+						continue
+					}
+				} else if (deviceMapping.outputName !== undefined) {
+					// Add index to outputName, so it can match. Assuming if the input port has an index, then the outputPort has too, as it does indicate a duplicate
+					outputName = deviceMapping.outputName + inputPortName.replace(/.* ([0-9]+)$/m, ' $1')
+				}
+			} else if (deviceMapping.outputName !== undefined) {
+				outputName = deviceMapping.outputName
+			}
+
+			if (deviceMapping.layout !== undefined) {
+				const findOutputName = outputName !== undefined ? outputName : inputPortName
+				discovered.push({
+					deviceHandle: `midi:${inputPortName}`,
+					surfaceId: `midi:${inputPortName}`,
+					description: `MIDI Port ${i}: ${inputPortName}`,
+					pluginInfo: {
+						inputPortName: inputPortName,
+						outputPortName: outputs.find((output) => output === findOutputName),
+						layout: deviceMapping.layout,
+					},
+				})
+			}
+		}
 
 		return discovered
 	},
@@ -40,30 +90,60 @@ const MidiPlugin: SurfacePlugin<MidiDeviceInfo> = {
 		pluginInfo: MidiDeviceInfo,
 		context: SurfaceContext,
 	): Promise<OpenSurfaceResult> => {
-		const layout: MidiLayoutDefinition = NovationLaunchpadLayoutTest
+		const layout: MidiLayoutDefinition = pluginInfo.layout
 
 		const input = new Input()
-		let output: Output | undefined
+		const output = new Output()
 
 		try {
-			input.openPortByName(pluginInfo.inputPortName)
-			output = new Output()
-			output.openPortByName(pluginInfo.inputPortName) // TODO - check if this is good?
+			const inputPortName = pluginInfo.inputPortName
+			const outputPortName = pluginInfo.outputPortName ?? pluginInfo.inputPortName
+
+			// Use index based off name (as name already gets an index number after the port name when duplicate name), then just indexOf
+			input.openPort(getInputs().indexOf(inputPortName))
+			const outputPortIndex = getOutputs().indexOf(outputPortName)
+			if (outputPortIndex > -1) output.openPort(outputPortIndex)
+			else throw new Error('Failed to open output port')
+			// Leaving this one ^^ in for when we switch to allowing users to change output port for a surface, when we add all midi devices by default
 
 			return {
-				surface: new MidiWrapper(surfaceId, input, output, pluginInfo.inputPortName, context, layout),
+				surface: new MidiWrapper(surfaceId, input, output, inputPortName, outputPortName, context, layout),
 				registerProps: {
-					brightness: true,
+					brightness: layout.supportsBrightness,
+					canChangePage: layout.canChangePage,
 					surfaceLayout: createSurfaceSchema(layout),
-					pincodeMap: null,
-					configFields: null,
+					pincodeMap: createPincodeMap(layout),
+					transferVariables: layout.transferVariables ?? [],
+					configFields: [
+						{
+							id: 'extendedMode',
+							type: 'checkbox',
+							label: 'Enable extended mode',
+							description:
+								'SOME devices contain extra buttons that do not have color support, and therefor will not be usable by default.\n' +
+								'But if you really care about utilizing those buttons, you can enable this. Just be aware those extra buttons do not have color support or only one color.',
+							isVisibleExpression: `${Object.values(layout.buttons).find((btn) => btn?.extendedModeOnly === true) ? 1 : 0} == 1`,
+							default: false,
+						},
+					],
 					location: null,
 				},
 			}
 		} catch (e) {
-			input.closePort()
-			output?.closePort()
+			try {
+				input.closePort()
+				input.destroy()
+			} catch {
+				/* empty */
+			}
+			try {
+				output.closePort()
+				output.destroy()
+			} catch {
+				/* empty */
+			}
 
+			context.disconnect(new Error('Failed to open MIDI device', { cause: e }))
 			throw e
 		}
 	},

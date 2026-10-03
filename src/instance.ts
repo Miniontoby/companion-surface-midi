@@ -1,67 +1,182 @@
 import {
-	CardGenerator,
-	HostCapabilities,
-	SurfaceDrawProps,
-	SurfaceContext,
-	SurfaceInstance,
-	ModuleLogger,
-	createModuleLogger,
 	assertNever,
+	type CardGenerator,
+	createModuleLogger,
+	type HostCapabilities,
+	parseColor,
+	type RgbColor,
+	type SurfaceDrawProps,
+	type SurfaceContext,
+	type SurfaceInstance,
+	type ModuleLogger,
 } from '@companion-surface/base'
-import type { Input, Output } from '@julusian/midi'
-// import { createControlId, parseControlId } from './util.js'
-import { MidiButtonDefinition, MidiLayoutDefinition } from './tmp-layout.js'
+import type { Input, Output } from '@julusian/midi/lazy'
+import type { MidiButtonDefinitionWithId, MidiLayoutDefinition } from './tmp-layout.js'
+import { parseControlId } from './util.js'
+import { getInputs, getOutputs } from './midi-helper.js'
 
 export class MidiWrapper implements SurfaceInstance {
 	readonly #logger: ModuleLogger
 
 	readonly #input: Input
-	readonly #output: Output | undefined
-	readonly #portName: string
+	readonly #output: Output
+	readonly #outputWasOpenAtStart: boolean = false
+	readonly #inputPortName: string
+	readonly #outputPortName: string
 	readonly #surfaceId: string
-	// readonly #layout: MidiLayoutDefinition
-	// readonly #context: SurfaceContext
+	readonly #context: SurfaceContext
+	readonly #layout: MidiLayoutDefinition
 
-	readonly #noteOnOffListeners: Map<number, MidiButtonDefinition> = new Map()
-	readonly #ccListeners: Map<number, MidiButtonDefinition> = new Map()
+	readonly #noteOnOffListeners: Map<number, MidiButtonDefinitionWithId> = new Map()
+	readonly #ccListeners: Map<number, MidiButtonDefinitionWithId> = new Map()
+	#extendedMode: boolean = false
 
-	// /**
-	//  * Last drawn colours, to allow resending when brightness changes
-	//  */
-	// readonly #lastColours: Record<string, RgbColor> = {}
-	// #brightness: number = 50
+	/**
+	 * Last drawn colours, to allow resending when brightness changes
+	 */
+	readonly #lastColours: Record<string, RgbColor> = {}
+	#brightness: number = 100
+	readonly #checkInterval: NodeJS.Timeout
 
 	public get surfaceId(): string {
 		return this.#surfaceId
 	}
 	public get productName(): string {
-		return this.#portName
+		return this.#inputPortName
 	}
 
 	public constructor(
 		surfaceId: string,
 		input: Input,
-		output: Output | undefined,
-		portName: string,
+		output: Output,
+		inputPortName: string,
+		outputPortName: string,
 		context: SurfaceContext,
 		layout: MidiLayoutDefinition,
 	) {
-		this.#logger = createModuleLogger(`Framework/${surfaceId}`)
+		this.#logger = createModuleLogger(`Instance/${surfaceId}`)
 		this.#input = input
 		this.#output = output
-		this.#portName = portName
+		this.#outputWasOpenAtStart = output.isPortOpen()
+		this.#inputPortName = inputPortName
+		this.#outputPortName = outputPortName
 		this.#surfaceId = surfaceId
-		// this.#context = context
-		// this.#layout = layout
+		this.#context = context
+		this.#layout = layout
+
+		this.#checkInterval = setInterval(() => {
+			this.#checkPortStatus()
+				.catch(() => {})
+				.finally(() => {})
+		}, 2e3)
+	}
+
+	async init(): Promise<void> {
+		this.#configureLayoutListeners()
+
+		this.#input.on('noteon', (note, velocity, info) => {
+			this.#logger.debug(`MIDI noteon received: channel=${info.channel} note=${note} velocity=${velocity}`)
+
+			const noteIdx = info.channel * 128 + note
+			const listener = this.#noteOnOffListeners.get(noteIdx)
+			if (!listener) return
+
+			if (listener.type === 'noteon') {
+				const { row } = parseControlId(listener.id)
+				if (!isNaN(row)) {
+					if (velocity > 0) {
+						this.#context.keyDownById(listener.id)
+					} else {
+						this.#context.keyUpById(listener.id)
+					}
+				} else if (velocity > 0) {
+					// Extra buttons
+					if (this.#layout.canChangePage) {
+						if (listener.id === 'page/left') this.#context.changePage(false)
+						else if (listener.id === 'page/right') this.#context.changePage(true)
+					}
+				}
+			} else if (listener.type === 'noteon-encoder') {
+				this.#context.sendVariableValue(listener.id, velocity)
+			}
+		})
+
+		this.#input.on('noteoff', (note, velocity, info) => {
+			this.#logger.debug(`MIDI noteoff received: channel=${info.channel} note=${note} velocity=${velocity}`)
+
+			const noteIdx = info.channel * 128 + note
+			const listener = this.#noteOnOffListeners.get(noteIdx)
+			if (!listener) return
+
+			if (listener.type === 'noteon') {
+				const { row } = parseControlId(listener.id)
+				if (!isNaN(row)) {
+					this.#context.keyUpById(listener.id)
+				}
+			} else if (listener.type === 'noteon-encoder') {
+				this.#context.sendVariableValue(listener.id, 0)
+			}
+		})
+
+		this.#input.on('cc', (param, value, info) => {
+			this.#logger.debug(`MIDI cc received: channel=${info.channel} param=${param} value=${value}`)
+
+			const noteIdx = info.channel * 128 + param
+			const listener = this.#ccListeners.get(noteIdx)
+			if (!listener) return
+
+			if (listener.type === 'cc') {
+				const { row } = parseControlId(listener.id)
+				if (!isNaN(row)) {
+					if (value > 0) {
+						this.#context.keyDownById(listener.id)
+					} else {
+						this.#context.keyUpById(listener.id)
+					}
+				} else if (value > 0) {
+					// Extra buttons
+					if (this.#layout.canChangePage) {
+						if (listener.id === 'page/left') this.#context.changePage(false)
+						else if (listener.id === 'page/right') this.#context.changePage(true)
+					}
+				}
+			} else if (listener.type === 'cc-encoder') {
+				this.#context.sendVariableValue(listener.id, value)
+			}
+		})
+
+		this.#input.on('sysex', (bytes) => {
+			if (this.#layout.parseSysex) {
+				this.#layout.parseSysex(this.#context, bytes)
+			}
+		})
+
+		// this.#input.on('error', (e) => context.disconnect(e))
+
+		// Start by blanking it
+		await this.blank()
+	}
+
+	#configureLayoutListeners(): void {
+		this.#noteOnOffListeners.clear()
+		this.#ccListeners.clear()
 
 		// Future: could there be multiple listeners for one note?
-		for (const button of layout.buttons) {
+		const buttons = this.#layout.buttons
+		for (const buttonId in buttons) {
+			if (!buttons[buttonId]) continue // should never happen but just for typescript
+			const button: MidiButtonDefinitionWithId = { ...buttons[buttonId], id: buttonId }
+			if (button.note < 0) continue
+			if (button.extendedModeOnly && !this.#extendedMode) continue
+			const noteIdx = button.channel * 128 + button.note
 			switch (button.type) {
 				case 'noteon':
-					this.#noteOnOffListeners.set(button.note, button)
+				case 'noteon-encoder':
+					this.#noteOnOffListeners.set(noteIdx, button)
 					break
 				case 'cc':
-					this.#ccListeners.set(button.note, button)
+				case 'cc-encoder':
+					this.#ccListeners.set(noteIdx, button)
 					break
 				default:
 					assertNever(button.type)
@@ -70,102 +185,200 @@ export class MidiWrapper implements SurfaceInstance {
 			}
 		}
 
-		// this.#input.on('messageBuffer', (deltaTime, message) => {
-		// 	console.log(`MIDI message received: ${message.toString('hex')} (Delta time: ${deltaTime})`)
-		// })
-		this.#input.on('noteon', (note, velocity, info) => {
-			console.log(`MIDI noteon received: note=${note} velocity=${velocity} info=${JSON.stringify(info)}`)
-			const listener = this.#noteOnOffListeners.get(note)
-			if (!listener) return
-
-			if (listener.type === 'noteon') {
-				if (velocity > 0) {
-					context.keyDownById(listener.id)
-				} else {
-					context.keyUpById(listener.id)
-				}
+		// Extra buttons that are not really buttons, but just helpful tools
+		const extraButtons = this.#layout.extraButtons
+		for (const buttonId in extraButtons) {
+			if (!extraButtons[buttonId]) continue // should never happen but just for typescript
+			const button: MidiButtonDefinitionWithId = { ...extraButtons[buttonId], id: buttonId }
+			if (button.note < 0) continue
+			if (button.extendedModeOnly && !this.#extendedMode) continue
+			const noteIdx = button.channel * 128 + button.note
+			switch (button.type) {
+				case 'noteon':
+				case 'noteon-encoder':
+					this.#noteOnOffListeners.set(noteIdx, button)
+					break
+				case 'cc':
+				case 'cc-encoder':
+					this.#ccListeners.set(noteIdx, button)
+					break
+				default:
+					assertNever(button.type)
+					this.#logger.warn(`Unknown button in layout: ${button.id}`)
+					break
 			}
-		})
-		this.#input.on('cc', (param, value, info) => {
-			console.log(`MIDI cc received: param=${param} value=${value} info=${JSON.stringify(info)}`)
+		}
 
-			const listener = this.#ccListeners.get(param)
-			if (!listener) return
-
-			if (listener.type === 'cc') {
-				if (value > 0) {
-					context.keyDownById(listener.id)
-				} else {
-					context.keyUpById(listener.id)
-				}
+		// Extra inputs from the device, such as encoders, etc
+		for (const variable of this.#layout.transferVariables?.filter((variable) => variable.type === 'input') ?? []) {
+			if (variable.note < 0) continue
+			if (variable.extendedModeOnly && !this.#extendedMode) continue
+			const button: MidiButtonDefinitionWithId = {
+				...variable,
+				type: (variable.msg_type + '-encoder') as 'cc-encoder' | 'noteon-encoder',
+				id: variable.id,
 			}
-		})
-
-		// this.#device.on('error', (e) => context.disconnect(e))
+			const noteIdx = button.channel * 128 + button.note
+			switch (variable.msg_type) {
+				case 'noteon':
+					this.#noteOnOffListeners.set(noteIdx, button)
+					break
+				case 'cc':
+					this.#ccListeners.set(noteIdx, button)
+					break
+				default:
+					assertNever(variable.msg_type)
+					this.#logger.warn(`Unknown variable in layout: ${variable.id}`)
+					break
+			}
+		}
 	}
 
-	async init(): Promise<void> {
-		// Start with blanking it
-		await this.blank()
-	}
 	async close(): Promise<void> {
-		await this.#clearPanel().catch(() => null)
+		this.#logger.debug('Connection closed')
+		clearInterval(this.#checkInterval)
+
+		if (this.#output.isPortOpen()) {
+			await this.#clearPanel().catch(() => null)
+
+			const commands = this.#layout.command_shutdown()
+			for (const command of commands) this.#output.sendMessage(command)
+		}
 
 		this.#input.closePort()
 		this.#input.destroy()
-		this.#output?.closePort()
-		this.#output?.destroy()
+		this.#output.closePort()
+		this.#output.destroy()
 	}
 
 	updateCapabilities(_capabilities: HostCapabilities): void {
 		// Not used
 	}
 
+	async updateConfig(config: Record<string, any>): Promise<void> {
+		this.#extendedMode = config?.extendedMode === true
+		this.#configureLayoutListeners()
+	}
+
 	async ready(): Promise<void> {}
 
 	async setBrightness(percent: number): Promise<void> {
-		// this.#brightness = percent
-		// for (let y = 0; y < MACROPAD_ROWS; y++) {
-		// 	for (let x = 0; x < MACROPAD_COLUMNS; x++) {
-		// 		const color = this.#lastColours[createControlId(y, x)] ?? { r: 0, g: 0, b: 0 }
-		// 		this.#writeKeyColour(x, y, color)
-		// 	}
-		// }
+		this.#brightness = this.#layout.supportsBrightness ? percent : 100
+		for (const btnId in this.#layout.buttons) {
+			const color = this.#lastColours[btnId] ?? { r: 0, g: 0, b: 0 }
+			this.#writeKeyColour(btnId, color)
+		}
 	}
+
 	async blank(): Promise<void> {
 		await this.#clearPanel()
 	}
+
 	async draw(_signal: AbortSignal, drawProps: SurfaceDrawProps): Promise<void> {
-		// const color = drawProps.color ? parseColor(drawProps.color) : { r: 0, g: 0, b: 0 }
-		// this.#lastColours[drawProps.controlId] = color
-		// const pos = parseControlId(drawProps.controlId)
-		// this.#writeKeyColour(pos.column, pos.row, color)
+		if (!this.#output.isPortOpen()) return
+
+		let color = drawProps.color ? parseColor(drawProps.color) : { r: 0, g: 0, b: 0 }
+
+		// using api 1.4.1+ it will provide an pressed property
+		if ('pressed' in drawProps) {
+			if (drawProps.pressed === true) {
+				color = {
+					r: 255,
+					g: 0,
+					b: 0,
+				}
+			}
+		} else if (drawProps.image && drawProps.image.length >= 3) {
+			// Grab bitmap one pixel color if provided. This will make sure we can kind of provide a color change when pressed...
+			color = {
+				r: drawProps.image[0],
+				g: drawProps.image[1],
+				b: drawProps.image[2],
+			}
+			if (this.#layout.isColorTooBlack(color)) {
+				color = {
+					r: drawProps.image[drawProps.image.length - 3],
+					g: drawProps.image[drawProps.image.length - 2],
+					b: drawProps.image[drawProps.image.length - 1],
+				}
+			}
+
+			// // for debugging purposes
+			// drawProps.image = new Uint8Array([
+			// 	...drawProps.image.slice(0, 3),
+			// 	...drawProps.image.slice(drawProps.image.length - 3, drawProps.image.length),
+			// ])
+		}
+		// this.#logger.debug(JSON.stringify(drawProps) + ' -> ' + JSON.stringify(color))
+		this.#lastColours[drawProps.controlId] = color
+
+		this.#writeKeyColour(drawProps.controlId, color)
 	}
 
-	// #writeKeyColour(x: number, y: number, color: RgbColor): void {
-	// 	const fillBuffer = Buffer.alloc(32)
-	// 	fillBuffer.writeUint8(0x0f, 0)
-	// 	fillBuffer.writeUint8(x + 1, 1)
-	// 	fillBuffer.writeUint8(y + 1, 2)
+	#writeKeyColour(controlId: string, color: RgbColor): void {
+		if (!this.#output.isPortOpen()) return
 
-	// 	const scale = (this.#brightness || 50) / 100
-	// 	fillBuffer.writeUint8(color.r * scale, 3)
-	// 	fillBuffer.writeUint8(color.g * scale, 4)
-	// 	fillBuffer.writeUint8(color.b * scale, 5)
+		if (this.#layout.supportsBrightness) {
+			const scale = Math.max(Math.min(this.#brightness, 100), 0) / 100
+			color = { r: color.r * scale, g: color.g * scale, b: color.b * scale }
+		}
 
-	// 	this.#device.write(fillBuffer).catch((e) => {
-	// 		this.#logger.error(`write failed: ${e}`)
-	// 	})
-	// }
+		const fillBuffer = this.#layout.command_writeKeyColour(controlId, color)
+		if (fillBuffer.length > 0) this.#output.sendMessage(fillBuffer)
+	}
 
 	async #clearPanel(): Promise<void> {
-		// const clearBuffer = Buffer.alloc(32)
-		// clearBuffer.writeUint8(0x0b, 0)
-		// await this.#device.write(clearBuffer)
+		if (!this.#output.isPortOpen()) return
+		const commands = this.#layout.command_clearPanel()
+		for (const command of commands) this.#output.sendMessage(command)
 	}
 
-	async showStatus(_signal: AbortSignal, _cardGenerator: CardGenerator): Promise<void> {
-		// Nothing to display here
-		// TODO - do some flashing lights to indicate each status?
+	async showStatus(_signal: AbortSignal, _cardGenerator: CardGenerator, _statusMessage: string): Promise<void> {
+		/*
+		const ids = this.#layout.buttons.map((a) => parseControlId(a.id))
+		const width = Math.max(...ids.map((id) => id.column))
+		const height = Math.max(...ids.map((id) => id.row))
+		const pixels = await _cardGenerator.generateLogoCard(width, height, 'rgb')
+
+		let btn = 0
+		for (let i = 0; i < pixels.length; i += 3) {
+			this.#writeKeyColour(this.#layout.buttons[btn++].id, { r: pixels[i], g: pixels[i + 1], b: pixels[i + 2] })
+		}
+		*/
+	}
+
+	onVariableValue(id: string, value: unknown): void {
+		if (!this.#output.isPortOpen()) return
+		const variable = this.#layout.transferVariables
+			?.filter((variable) => variable.type === 'output')
+			.find((variable) => variable.id === id)
+		if (variable && typeof value === 'number' && value >= 0 && value <= 127) {
+			variable.callback(this.#output, value)
+		}
+	}
+
+	async #checkPortStatus(): Promise<void> {
+		let disconnected: boolean = false
+		if (!this.#input.isPortOpen()) {
+			this.#context.disconnect(new Error('Input port closed'))
+			disconnected = true
+		} else if (this.#outputWasOpenAtStart && !this.#output.isPortOpen()) {
+			this.#context.disconnect(new Error('Output port closed'))
+			disconnected = true
+		} else if (!getInputs().includes(this.#inputPortName)) {
+			this.#input.closePort()
+			this.#output.closePort()
+			this.#context.disconnect(new Error('Input port is lost'))
+			disconnected = true
+		} else if (this.#outputWasOpenAtStart && !getOutputs().includes(this.#outputPortName)) {
+			this.#input.closePort()
+			this.#output.closePort()
+			this.#context.disconnect(new Error('Output port is lost'))
+			disconnected = true
+		}
+
+		if (disconnected) {
+			clearInterval(this.#checkInterval)
+		}
 	}
 }
